@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>기타 코드 악보 뷰어</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --text: #f0f0f0;
+      --chord: #ff9800;
+      --btn-bg: #2d2d2d;
+      --btn-hover: #404040;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+    }
+    .toolbar {
+      position: sticky;
+      top: 15px;
+      background: var(--card);
+      padding: 12px 18px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      margin-bottom: 20px;
+      z-index: 100;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    button {
+      background: var(--btn-bg);
+      color: var(--text);
+      border: 1px solid #444;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+    button:hover {
+      background: var(--btn-hover);
+    }
+    .key-badge {
+      font-size: 14px;
+      font-weight: bold;
+      min-width: 65px;
+      text-align: center;
+    }
+    .sheet-card {
+      background: var(--card);
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      font-size: 16px;
+      line-height: 1.8;
+    }
+    .line {
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .pair {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-right: 1px;
+    }
+    .chord {
+      color: var(--chord);
+      font-weight: bold;
+      font-size: 15px;
+      min-height: 20px;
+      font-family: monospace;
+    }
+    .lyric {
+      font-size: 16px;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="toolbar">
+      <div class="btn-group">
+        <span>Key:</span>
+        <button onclick="changeKey(-1)">-1</button>
+        <button onclick="changeKey(1)">+1</button>
+        <span class="key-badge" id="key-display">원키 (0)</span>
+      </div>
+      <div class="btn-group">
+        <button id="scroll-btn" onclick="toggleScroll()">스크롤 시작</button>
+      </div>
+    </div>
+
+    <div class="sheet-card" id="output"></div>
+  </div>
+
+  <script>
+    // 가사와 코드 데이터 ([코드]가사 형식)
+    const songData = `
+[C]푸른 하늘 [G]너머로 [Am]날아가는 [F]새처럼
+[C]너를 향한 [G]내 마음도 [F]자유롭게 [G]떠올라
+
+[Am]어두운 밤이 [Em]찾아와도
+[F]네가 있어 [G]빛이 [C]나
+`;
+
+    const scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    let transposeStep = 0;
+
+    function transposeChord(chord, amount) {
+      return chord.replace(/([A-G][#b]?)/g, (match) => {
+        let root = match;
+        // 플랫(b)을 샵(#) 음계로 매핑
+        const flats = { 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#' };
+        if (flats[root]) root = flats[root];
+
+        const index = scale.indexOf(root);
+        if (index === -1) return match;
+
+        let newIndex = (index + amount) % 12;
+        if (newIndex < 0) newIndex += 12;
+        return scale[newIndex];
+      });
+    }
+
+    function renderSheet() {
+      const output = document.getElementById('output');
+      output.innerHTML = '';
+
+      const lines = songData.trim().split('\n');
+
+      lines.forEach(lineText => {
+        if (lineText.trim() === '') {
+          output.appendChild(document.createElement('br'));
+          return;
+        }
+
+        const lineDiv = document.createElement('div');
+        lineDiv.className = 'line';
+
+        // [코드]가사 파싱 정규식
+        const regex = /\[(.*?)\]([^\[]*)/g;
+        let match;
+        let foundAny = false;
+
+        while ((match = regex.exec(lineText)) !== null) {
+          foundAny = true;
+          const chord = match[1];
+          const lyric = match[2];
+
+          const pair = document.createElement('div');
+          pair.className = 'pair';
+
+          const chordSpan = document.createElement('span');
+          chordSpan.className = 'chord';
+          chordSpan.textContent = transposeChord(chord, transposeStep);
+
+          const lyricSpan = document.createElement('span');
+          lyricSpan.className = 'lyric';
+          lyricSpan.textContent = lyric || ' ';
+
+          pair.appendChild(chordSpan);
+          pair.appendChild(lyricSpan);
+          lineDiv.appendChild(pair);
+        }
+
+        // 코드가 없는 줄 처리
+        if (!foundAny) {
+          const plainText = document.createElement('div');
+          plainText.className = 'lyric';
+          plainText.textContent = lineText;
+          lineDiv.appendChild(plainText);
+        }
+
+        output.appendChild(lineDiv);
+      });
+    }
+
+    function changeKey(amount) {
+      transposeStep += amount;
+      const label = transposeStep === 0 
+        ? "원키 (0)" 
+        : `${transposeStep > 0 ? '+' : ''}${transposeStep}`;
+      document.getElementById('key-display').textContent = label;
+      renderSheet();
+    }
+
+    let scrollTimer = null;
+    function toggleScroll() {
+      const btn = document.getElementById('scroll-btn');
+      if (scrollTimer) {
+        clearInterval(scrollTimer);
+        scrollTimer = null;
+        btn.textContent = "스크롤 시작";
+      } else {
+        scrollTimer = setInterval(() => {
+          window.scrollBy(0, 1);
+        }, 40);
+        btn.textContent = "일시 정지";
+      }
+    }
+
+    // 초기 실행
+    renderSheet();
+  </script>
+</body>
+</html>
