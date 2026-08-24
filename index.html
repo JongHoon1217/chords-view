@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>기타 코드 악보 뷰어</title>
+  <title>나만의 기타 악보 보관함</title>
   <style>
     :root {
       --bg: #121212;
@@ -12,62 +12,97 @@
       --chord: #ff9800;
       --btn-bg: #2d2d2d;
       --btn-hover: #404040;
+      --accent: #00bcd4;
+      --danger: #f44336;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 20px;
+      padding: 15px;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
     .container {
-      max-width: 600px;
+      max-width: 650px;
       width: 100%;
     }
+    /* 탭 메뉴 */
+    .tab-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      width: 100%;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: var(--btn-bg);
+      color: var(--text);
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+    /* 툴바 */
     .toolbar {
       position: sticky;
-      top: 15px;
+      top: 10px;
       background: var(--card);
-      padding: 12px 18px;
+      padding: 12px 16px;
       border-radius: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       z-index: 100;
     }
     .btn-group {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
     }
     button {
       background: var(--btn-bg);
       color: var(--text);
       border: 1px solid #444;
-      padding: 6px 14px;
+      padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
-      font-size: 14px;
-      transition: 0.2s;
+      font-size: 13px;
     }
-    button:hover {
-      background: var(--btn-hover);
-    }
+    button:hover { background: var(--btn-hover); }
     .key-badge {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
-      min-width: 65px;
+      min-width: 55px;
       text-align: center;
     }
+    /* 셀렉트 박스 */
+    select {
+      background: var(--btn-bg);
+      color: var(--text);
+      border: 1px solid #444;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+    /* 악보 뷰어 카드 */
     .sheet-card {
       background: var(--card);
-      padding: 25px;
+      padding: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.3);
       font-size: 16px;
@@ -95,49 +130,131 @@
       font-size: 16px;
       white-space: pre;
     }
+    /* 에디터 폼 */
+    .editor-card {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    input, textarea {
+      background: #121212;
+      border: 1px solid #444;
+      color: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    textarea {
+      height: 250px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    .save-btn { background: var(--accent); color: #000; border: none; padding: 10px; }
+    .delete-btn { background: var(--danger); color: #fff; border: none; margin-left: 5px; }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <div class="toolbar">
-      <div class="btn-group">
-        <span>Key:</span>
-        <button onclick="changeKey(-1)">-1</button>
-        <button onclick="changeKey(1)">+1</button>
-        <span class="key-badge" id="key-display">원키 (0)</span>
-      </div>
-      <div class="btn-group">
-        <button id="scroll-btn" onclick="toggleScroll()">스크롤 시작</button>
-      </div>
+    <!-- 탭 전환 -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('viewer')">악보 보기</button>
+      <button class="tab-btn" onclick="switchTab('editor')">곡 추가 / 편집</button>
     </div>
 
-    <div class="sheet-card" id="output"></div>
+    <!-- 1. 악보 뷰어 화면 -->
+    <div id="viewer-tab">
+      <select id="song-select" onchange="loadSelectedSong()"></select>
+
+      <div class="toolbar">
+        <div class="btn-group">
+          <span>Key:</span>
+          <button onclick="changeKey(-1)">-1</button>
+          <button onclick="changeKey(1)">+1</button>
+          <span class="key-badge" id="key-display">원키 (0)</span>
+        </div>
+        <div class="btn-group">
+          <button id="scroll-btn" onclick="toggleScroll()">스크롤 시작</button>
+          <button class="delete-btn" onclick="deleteCurrentSong()">삭제</button>
+        </div>
+      </div>
+
+      <div class="sheet-card" id="output"></div>
+    </div>
+
+    <!-- 2. 곡 추가/수정 화면 -->
+    <div id="editor-tab" class="hidden">
+      <div class="editor-card">
+        <input type="text" id="song-title" placeholder="곡 제목 (예: Soranji)">
+        <input type="text" id="song-artist" placeholder="아티스트 (예: Mrs. GREEN APPLE)">
+        <textarea id="song-content" placeholder="ChordPro 형식으로 입력:&#10;[C]가사 [G]입력 [Am]예시"></textarea>
+        <button class="save-btn" onclick="saveSong()">보관함에 저장하기</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    // 가사와 코드 데이터 ([코드]가사 형식)
-    const songData = `
-[C]푸른 하늘 [G]너머로 [Am]날아가는 [F]새처럼
-[C]너를 향한 [G]내 마음도 [F]자유롭게 [G]떠올라
-
-[Am]어두운 밤이 [Em]찾아와도
-[F]네가 있어 [G]빛이 [C]나
-`;
-
     const scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     let transposeStep = 0;
+    let currentSongKey = '';
+
+    // 기본 예시 곡
+    const defaultSongs = {
+      "sample-1": {
+        title: "예시 곡 (사용법 안내)",
+        artist: "튜토리얼",
+        content: "[C]가사 앞에 [G]대괄호로 [Am]코드를 [F]달아주세요\n[C]상단 편집 [G]탭에서 [F]새 곡을 [G]저장할 수 [C]있어요"
+      }
+    };
+
+    function getStorageSongs() {
+      const data = localStorage.getItem('my_guitar_chords');
+      return data ? JSON.parse(data) : defaultSongs;
+    }
+
+    function saveStorageSongs(songs) {
+      localStorage.setItem('my_guitar_chords', JSON.stringify(songs));
+    }
+
+    function updateDropdown() {
+      const songs = getStorageSongs();
+      const select = document.getElementById('song-select');
+      select.innerHTML = '';
+
+      Object.keys(songs).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = `${songs[key].title} - ${songs[key].artist}`;
+        select.appendChild(opt);
+      });
+
+      if (!currentSongKey || !songs[currentSongKey]) {
+        currentSongKey = Object.keys(songs)[0] || '';
+      }
+      select.value = currentSongKey;
+      loadSelectedSong();
+    }
+
+    function loadSelectedSong() {
+      const songs = getStorageSongs();
+      currentSongKey = document.getElementById('song-select').value;
+      transposeStep = 0;
+      updateKeyDisplay();
+      renderSheet();
+    }
 
     function transposeChord(chord, amount) {
       return chord.replace(/([A-G][#b]?)/g, (match) => {
         let root = match;
-        // 플랫(b)을 샵(#) 음계로 매핑
         const flats = { 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#' };
         if (flats[root]) root = flats[root];
-
         const index = scale.indexOf(root);
         if (index === -1) return match;
-
         let newIndex = (index + amount) % 12;
         if (newIndex < 0) newIndex += 12;
         return scale[newIndex];
@@ -145,9 +262,16 @@
     }
 
     function renderSheet() {
+      const songs = getStorageSongs();
       const output = document.getElementById('output');
       output.innerHTML = '';
 
+      if (!currentSongKey || !songs[currentSongKey]) {
+        output.innerHTML = '<div style="text-align:center; color:#888;">저장된 곡이 없습니다. 편집 탭에서 곡을 추가해 보세요!</div>';
+        return;
+      }
+
+      const songData = songs[currentSongKey].content;
       const lines = songData.trim().split('\n');
 
       lines.forEach(lineText => {
@@ -158,34 +282,28 @@
 
         const lineDiv = document.createElement('div');
         lineDiv.className = 'line';
-
-        // [코드]가사 파싱 정규식
         const regex = /\[(.*?)\]([^\[]*)/g;
         let match;
         let foundAny = false;
 
         while ((match = regex.exec(lineText)) !== null) {
           foundAny = true;
-          const chord = match[1];
-          const lyric = match[2];
-
           const pair = document.createElement('div');
           pair.className = 'pair';
 
           const chordSpan = document.createElement('span');
           chordSpan.className = 'chord';
-          chordSpan.textContent = transposeChord(chord, transposeStep);
+          chordSpan.textContent = transposeChord(match[1], transposeStep);
 
           const lyricSpan = document.createElement('span');
           lyricSpan.className = 'lyric';
-          lyricSpan.textContent = lyric || ' ';
+          lyricSpan.textContent = match[2] || ' ';
 
           pair.appendChild(chordSpan);
           pair.appendChild(lyricSpan);
           lineDiv.appendChild(pair);
         }
 
-        // 코드가 없는 줄 처리
         if (!foundAny) {
           const plainText = document.createElement('div');
           plainText.className = 'lyric';
@@ -199,11 +317,13 @@
 
     function changeKey(amount) {
       transposeStep += amount;
-      const label = transposeStep === 0 
-        ? "원키 (0)" 
-        : `${transposeStep > 0 ? '+' : ''}${transposeStep}`;
-      document.getElementById('key-display').textContent = label;
+      updateKeyDisplay();
       renderSheet();
+    }
+
+    function updateKeyDisplay() {
+      const label = transposeStep === 0 ? "원키 (0)" : `${transposeStep > 0 ? '+' : ''}${transposeStep}`;
+      document.getElementById('key-display').textContent = label;
     }
 
     let scrollTimer = null;
@@ -214,15 +334,68 @@
         scrollTimer = null;
         btn.textContent = "스크롤 시작";
       } else {
-        scrollTimer = setInterval(() => {
-          window.scrollBy(0, 1);
-        }, 40);
+        scrollTimer = setInterval(() => { window.scrollBy(0, 1); }, 40);
         btn.textContent = "일시 정지";
       }
     }
 
-    // 초기 실행
-    renderSheet();
+    function switchTab(tab) {
+      const viewerTab = document.getElementById('viewer-tab');
+      const editorTab = document.getElementById('editor-tab');
+      const btns = document.querySelectorAll('.tab-btn');
+
+      if (tab === 'viewer') {
+        viewerTab.classList.remove('hidden');
+        editorTab.classList.add('hidden');
+        btns[0].classList.add('active');
+        btns[1].classList.remove('active');
+        updateDropdown();
+      } else {
+        viewerTab.classList.add('hidden');
+        editorTab.classList.remove('hidden');
+        btns[0].classList.remove('active');
+        btns[1].classList.add('active');
+      }
+    }
+
+    function saveSong() {
+      const title = document.getElementById('song-title').value.trim();
+      const artist = document.getElementById('song-artist').value.trim() || 'Unknown';
+      const content = document.getElementById('song-content').value.trim();
+
+      if (!title || !content) {
+        alert('곡 제목과 가사/코드를 입력해주세요.');
+        return;
+      }
+
+      const songs = getStorageSongs();
+      const id = 'song_' + Date.now();
+      songs[id] = { title, artist, content };
+      saveStorageSongs(songs);
+
+      // 입력 필드 초기화
+      document.getElementById('song-title').value = '';
+      document.getElementById('song-artist').value = '';
+      document.getElementById('song-content').value = '';
+
+      currentSongKey = id;
+      alert('저장되었습니다!');
+      switchTab('viewer');
+    }
+
+    function deleteCurrentSong() {
+      if (!currentSongKey) return;
+      if (!confirm('정말 이 곡을 삭제할까요?')) return;
+
+      const songs = getStorageSongs();
+      delete songs[currentSongKey];
+      saveStorageSongs(songs);
+      currentSongKey = '';
+      updateDropdown();
+    }
+
+    // 초기 로딩
+    updateDropdown();
   </script>
 </body>
 </html>
