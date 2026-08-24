@@ -29,12 +29,10 @@
       max-width: 650px;
       width: 100%;
     }
-    /* 탭 메뉴 */
     .tab-bar {
       display: flex;
       gap: 10px;
       margin-bottom: 15px;
-      width: 100%;
     }
     .tab-btn {
       flex: 1;
@@ -52,7 +50,6 @@
       color: #000;
       border-color: var(--accent);
     }
-    /* 툴바 */
     .toolbar {
       position: sticky;
       top: 10px;
@@ -60,11 +57,18 @@
       padding: 12px 16px;
       border-radius: 10px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      gap: 10px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.5);
       margin-bottom: 15px;
       z-index: 100;
+    }
+    .tool-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
     }
     .btn-group {
       display: flex;
@@ -82,24 +86,35 @@
       font-size: 13px;
     }
     button:hover { background: var(--btn-hover); }
-    .key-badge {
+    .key-badge, .capo-badge {
       font-size: 13px;
       font-weight: bold;
-      min-width: 55px;
-      text-align: center;
+      padding: 3px 8px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      border: 1px solid #3d3d3d;
     }
-    /* 셀렉트 박스 */
-    select {
+    .capo-badge {
+      color: var(--accent);
+    }
+    .speed-select {
       background: var(--btn-bg);
       color: var(--text);
       border: 1px solid #444;
-      padding: 8px 12px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    select#song-select {
+      background: var(--btn-bg);
+      color: var(--text);
+      border: 1px solid #444;
+      padding: 10px 12px;
       border-radius: 6px;
       font-size: 14px;
       width: 100%;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
-    /* 악보 뷰어 카드 */
     .sheet-card {
       background: var(--card);
       padding: 20px;
@@ -130,7 +145,6 @@
       font-size: 16px;
       white-space: pre;
     }
-    /* 에디터 폼 */
     .editor-card {
       background: var(--card);
       padding: 20px;
@@ -138,6 +152,10 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
     }
     input, textarea {
       background: #121212;
@@ -148,23 +166,25 @@
       font-size: 14px;
       font-family: inherit;
     }
+    .input-row input { flex: 1; }
     textarea {
-      height: 250px;
+      height: 280px;
       resize: vertical;
       line-height: 1.6;
     }
     .save-btn { background: var(--accent); color: #000; border: none; padding: 10px; }
-    .delete-btn { background: var(--danger); color: #fff; border: none; margin-left: 5px; }
+    .edit-btn { background: #3f51b5; color: #fff; border: none; }
+    .delete-btn { background: var(--danger); color: #fff; border: none; }
+    .cancel-btn { background: #555; color: #fff; border: none; padding: 10px; }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <!-- 탭 전환 -->
     <div class="tab-bar">
-      <button class="tab-btn active" onclick="switchTab('viewer')">악보 보기</button>
-      <button class="tab-btn" onclick="switchTab('editor')">곡 추가 / 편집</button>
+      <button class="tab-btn active" id="btn-tab-viewer" onclick="switchTab('viewer')">악보 보기</button>
+      <button class="tab-btn" id="btn-tab-editor" onclick="openEditorForNew()">새 곡 추가</button>
     </div>
 
     <!-- 1. 악보 뷰어 화면 -->
@@ -172,28 +192,57 @@
       <select id="song-select" onchange="loadSelectedSong()"></select>
 
       <div class="toolbar">
-        <div class="btn-group">
-          <span>Key:</span>
-          <button onclick="changeKey(-1)">-1</button>
-          <button onclick="changeKey(1)">+1</button>
-          <span class="key-badge" id="key-display">원키 (0)</span>
+        <div class="tool-row">
+          <div class="btn-group">
+            <span>Key:</span>
+            <button onclick="changeKey(-1)">-1</button>
+            <button onclick="changeKey(1)">+1</button>
+            <span class="key-badge" id="key-display">원키 (0)</span>
+            <span class="capo-badge" id="capo-display">Capo 0</span>
+          </div>
+          <div class="btn-group">
+            <button class="edit-btn" onclick="openEditorForEdit()">수정</button>
+            <button class="delete-btn" onclick="deleteCurrentSong()">삭제</button>
+          </div>
         </div>
-        <div class="btn-group">
-          <button id="scroll-btn" onclick="toggleScroll()">스크롤 시작</button>
-          <button class="delete-btn" onclick="deleteCurrentSong()">삭제</button>
+
+        <div class="tool-row">
+          <div class="btn-group">
+            <span>속도:</span>
+            <select id="scroll-speed" class="speed-select" onchange="updateScrollSpeed()">
+              <option value="0.1">0.1x (매우 느림)</option>
+              <option value="0.2">0.2x</option>
+              <option value="0.3">0.3x</option>
+              <option value="0.4">0.4x</option>
+              <option value="0.5">0.5x</option>
+              <option value="0.7">0.7x</option>
+              <option value="1.0" selected>1.0x (기본)</option>
+              <option value="1.3">1.3x</option>
+              <option value="1.6">1.6x</option>
+              <option value="2.0">2.0x (빠름)</option>
+            </select>
+          </div>
+          <button id="scroll-btn" onclick="toggleScroll()" style="flex:1; max-width:140px;">스크롤 시작</button>
         </div>
       </div>
 
       <div class="sheet-card" id="output"></div>
     </div>
 
-    <!-- 2. 곡 추가/수정 화면 -->
+    <!-- 2. 곡 추가/수정 에디터 -->
     <div id="editor-tab" class="hidden">
       <div class="editor-card">
-        <input type="text" id="song-title" placeholder="곡 제목 (예: Soranji)">
-        <input type="text" id="song-artist" placeholder="아티스트 (예: Mrs. GREEN APPLE)">
-        <textarea id="song-content" placeholder="ChordPro 형식으로 입력:&#10;[C]가사 [G]입력 [Am]예시"></textarea>
-        <button class="save-btn" onclick="saveSong()">보관함에 저장하기</button>
+        <div class="input-row">
+          <input type="text" id="song-title" placeholder="곡 제목 (예: 고백)" style="flex: 2;">
+          <input type="text" id="song-capo" placeholder="카포 위치 (예: 4)" style="flex: 1;">
+        </div>
+        <input type="text" id="song-artist" placeholder="아티스트 (예: 델리스파이스)">
+        <textarea id="song-content" placeholder="ChordPro 형식:&#10;[G]가사 [A]입력 [C]예시"></textarea>
+        
+        <div style="display: flex; gap: 8px;">
+          <button class="save-btn" style="flex: 2;" onclick="saveSong()">저장하기</button>
+          <button class="cancel-btn" style="flex: 1;" onclick="switchTab('viewer')">취소</button>
+        </div>
       </div>
     </div>
   </div>
@@ -202,13 +251,15 @@
     const scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     let transposeStep = 0;
     let currentSongKey = '';
+    let editingSongId = null;
 
-    // 기본 예시 곡
+    // 초기 샘플
     const defaultSongs = {
       "sample-1": {
-        title: "예시 곡 (사용법 안내)",
-        artist: "튜토리얼",
-        content: "[C]가사 앞에 [G]대괄호로 [Am]코드를 [F]달아주세요\n[C]상단 편집 [G]탭에서 [F]새 곡을 [G]저장할 수 [C]있어요"
+        title: "고백",
+        artist: "델리스파이스",
+        capo: "4",
+        content: `[G]중2때까진 늘 첫 [A]째에 [C]겨우 160이 됐[G]을 무렵\n[G]쓸만한 녀석들은 [A]모두 다 [C]이미 첫사랑 진행 [G]중\n\n[Em]정말 듣고 싶었던 [A]말이야 물론 [C]2년전 일이지[G]만\n[Em]기뻐해야하는 게 당[A]연한데 내 [C]기분은 그게 아[G]냐\n하지만 [G]미안해 이 넓은 가슴[A]에 묻혀 다른 [C]누구를 생각[G]했었어\n미안해 너[G]의 손을 잡고 걸을 [A]때에도 떠올[C]렸었어 그 사람[G]을`
       }
     };
 
@@ -226,15 +277,23 @@
       const select = document.getElementById('song-select');
       select.innerHTML = '';
 
-      Object.keys(songs).forEach(key => {
+      const keys = Object.keys(songs);
+      if (keys.length === 0) {
+        currentSongKey = '';
+        loadSelectedSong();
+        return;
+      }
+
+      keys.forEach(key => {
         const opt = document.createElement('option');
         opt.value = key;
-        opt.textContent = `${songs[key].title} - ${songs[key].artist}`;
+        const capoText = songs[key].capo ? ` (Capo ${songs[key].capo})` : '';
+        opt.textContent = `${songs[key].title} - ${songs[key].artist}${capoText}`;
         select.appendChild(opt);
       });
 
       if (!currentSongKey || !songs[currentSongKey]) {
-        currentSongKey = Object.keys(songs)[0] || '';
+        currentSongKey = keys[0];
       }
       select.value = currentSongKey;
       loadSelectedSong();
@@ -242,9 +301,20 @@
 
     function loadSelectedSong() {
       const songs = getStorageSongs();
-      currentSongKey = document.getElementById('song-select').value;
+      const select = document.getElementById('song-select');
+      if (select.value) currentSongKey = select.value;
+
       transposeStep = 0;
       updateKeyDisplay();
+
+      const capoDisplay = document.getElementById('capo-display');
+      if (currentSongKey && songs[currentSongKey] && songs[currentSongKey].capo) {
+        capoDisplay.textContent = `Capo ${songs[currentSongKey].capo}`;
+        capoDisplay.style.display = 'inline-block';
+      } else {
+        capoDisplay.style.display = 'none';
+      }
+
       renderSheet();
     }
 
@@ -267,7 +337,7 @@
       output.innerHTML = '';
 
       if (!currentSongKey || !songs[currentSongKey]) {
-        output.innerHTML = '<div style="text-align:center; color:#888;">저장된 곡이 없습니다. 편집 탭에서 곡을 추가해 보세요!</div>';
+        output.innerHTML = '<div style="text-align:center; color:#888;">곡을 추가해 보세요.</div>';
         return;
       }
 
@@ -326,40 +396,95 @@
       document.getElementById('key-display').textContent = label;
     }
 
-    let scrollTimer = null;
+    /* 부드러운 서브픽셀 스크롤 엔진 (0.1 ~ 2.0x 지원) */
+    let isScrolling = false;
+    let animationFrameId = null;
+    let accumulatedScroll = 0;
+
+    function getScrollSpeed() {
+      return parseFloat(document.getElementById('scroll-speed').value) || 1.0;
+    }
+
+    function scrollStep() {
+      if (!isScrolling) return;
+      const speed = getScrollSpeed();
+      accumulatedScroll += speed * 0.7; // 기본 보정치
+
+      if (accumulatedScroll >= 1) {
+        const movePixels = Math.floor(accumulatedScroll);
+        window.scrollBy(0, movePixels);
+        accumulatedScroll -= movePixels;
+      }
+      animationFrameId = requestAnimationFrame(scrollStep);
+    }
+
     function toggleScroll() {
       const btn = document.getElementById('scroll-btn');
-      if (scrollTimer) {
-        clearInterval(scrollTimer);
-        scrollTimer = null;
+      if (isScrolling) {
+        isScrolling = false;
+        cancelAnimationFrame(animationFrameId);
         btn.textContent = "스크롤 시작";
       } else {
-        scrollTimer = setInterval(() => { window.scrollBy(0, 1); }, 40);
+        isScrolling = true;
+        accumulatedScroll = 0;
+        animationFrameId = requestAnimationFrame(scrollStep);
         btn.textContent = "일시 정지";
       }
     }
 
+    function updateScrollSpeed() {
+      accumulatedScroll = 0;
+    }
+
+    /* 탭 및 에디터 관리 */
     function switchTab(tab) {
       const viewerTab = document.getElementById('viewer-tab');
       const editorTab = document.getElementById('editor-tab');
-      const btns = document.querySelectorAll('.tab-btn');
+      const btnViewer = document.getElementById('btn-tab-viewer');
+      const btnEditor = document.getElementById('btn-tab-editor');
 
       if (tab === 'viewer') {
         viewerTab.classList.remove('hidden');
         editorTab.classList.add('hidden');
-        btns[0].classList.add('active');
-        btns[1].classList.remove('active');
+        btnViewer.classList.add('active');
+        btnEditor.classList.remove('active');
         updateDropdown();
       } else {
         viewerTab.classList.add('hidden');
         editorTab.classList.remove('hidden');
-        btns[0].classList.remove('active');
-        btns[1].classList.add('active');
+        btnViewer.classList.remove('active');
+        btnEditor.classList.add('active');
       }
+    }
+
+    function openEditorForNew() {
+      editingSongId = null;
+      document.getElementById('btn-tab-editor').textContent = "새 곡 추가";
+      document.getElementById('song-title').value = '';
+      document.getElementById('song-capo').value = '';
+      document.getElementById('song-artist').value = '';
+      document.getElementById('song-content').value = '';
+      switchTab('editor');
+    }
+
+    function openEditorForEdit() {
+      if (!currentSongKey) return;
+      const songs = getStorageSongs();
+      const song = songs[currentSongKey];
+      if (!song) return;
+
+      editingSongId = currentSongKey;
+      document.getElementById('btn-tab-editor').textContent = "곡 수정";
+      document.getElementById('song-title').value = song.title || '';
+      document.getElementById('song-capo').value = song.capo || '';
+      document.getElementById('song-artist').value = song.artist || '';
+      document.getElementById('song-content').value = song.content || '';
+      switchTab('editor');
     }
 
     function saveSong() {
       const title = document.getElementById('song-title').value.trim();
+      const capo = document.getElementById('song-capo').value.trim();
       const artist = document.getElementById('song-artist').value.trim() || 'Unknown';
       const content = document.getElementById('song-content').value.trim();
 
@@ -369,16 +494,13 @@
       }
 
       const songs = getStorageSongs();
-      const id = 'song_' + Date.now();
-      songs[id] = { title, artist, content };
+      const id = editingSongId ? editingSongId : ('song_' + Date.now());
+      songs[id] = { title, capo, artist, content };
       saveStorageSongs(songs);
 
-      // 입력 필드 초기화
-      document.getElementById('song-title').value = '';
-      document.getElementById('song-artist').value = '';
-      document.getElementById('song-content').value = '';
-
       currentSongKey = id;
+      editingSongId = null;
+      document.getElementById('btn-tab-editor').textContent = "새 곡 추가";
       alert('저장되었습니다!');
       switchTab('viewer');
     }
@@ -394,7 +516,7 @@
       updateDropdown();
     }
 
-    // 초기 로딩
+    // 초기 실행
     updateDropdown();
   </script>
 </body>
