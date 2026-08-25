@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>나만의 기타 악보 보관함</title>
+  
+  <!-- Firebase SDK 로드 -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <style>
     :root {
       --bg: #121212;
@@ -25,155 +30,56 @@
       flex-direction: column;
       align-items: center;
     }
-    .container {
-      max-width: 650px;
-      width: 100%;
-    }
-    .tab-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
+    .container { max-width: 650px; width: 100%; }
+    .tab-bar { display: flex; gap: 10px; margin-bottom: 15px; }
     .tab-btn {
-      flex: 1;
-      padding: 10px;
-      background: var(--btn-bg);
-      color: var(--text);
-      border: 1px solid #444;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
+      flex: 1; padding: 10px; background: var(--btn-bg); color: var(--text);
+      border: 1px solid #444; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;
     }
-    .tab-btn.active {
-      background: var(--accent);
-      color: #000;
-      border-color: var(--accent);
-    }
+    .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
     .toolbar {
-      position: sticky;
-      top: 10px;
-      background: var(--card);
-      padding: 12px 16px;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-      margin-bottom: 15px;
-      z-index: 100;
+      position: sticky; top: 10px; background: var(--card); padding: 12px 16px;
+      border-radius: 10px; display: flex; flex-direction: column; gap: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 15px; z-index: 100;
     }
-    .tool-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .btn-group {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-    }
+    .tool-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .btn-group { display: flex; gap: 6px; align-items: center; }
     button {
-      background: var(--btn-bg);
-      color: var(--text);
-      border: 1px solid #444;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 13px;
+      background: var(--btn-bg); color: var(--text); border: 1px solid #444;
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;
     }
     button:hover { background: var(--btn-hover); }
     .key-badge, .capo-badge {
-      font-size: 13px;
-      font-weight: bold;
-      padding: 3px 8px;
-      background: #2a2a2a;
-      border-radius: 4px;
-      border: 1px solid #3d3d3d;
+      font-size: 13px; font-weight: bold; padding: 3px 8px; background: #2a2a2a;
+      border-radius: 4px; border: 1px solid #3d3d3d;
     }
-    .capo-badge {
-      color: var(--accent);
-    }
+    .capo-badge { color: var(--accent); }
     .speed-select {
-      background: var(--btn-bg);
-      color: var(--text);
-      border: 1px solid #444;
-      padding: 5px 8px;
-      border-radius: 6px;
-      font-size: 13px;
+      background: var(--btn-bg); color: var(--text); border: 1px solid #444;
+      padding: 5px 8px; border-radius: 6px; font-size: 13px;
     }
     select#song-select {
-      background: var(--btn-bg);
-      color: var(--text);
-      border: 1px solid #444;
-      padding: 10px 12px;
-      border-radius: 6px;
-      font-size: 14px;
-      width: 100%;
-      margin-bottom: 10px;
+      background: var(--btn-bg); color: var(--text); border: 1px solid #444;
+      padding: 10px 12px; border-radius: 6px; font-size: 14px; width: 100%; margin-bottom: 10px;
     }
     .sheet-card {
-      background: var(--card);
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      font-size: 16px;
-      line-height: 1.8;
+      background: var(--card); padding: 20px; border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3); font-size: 16px; line-height: 1.8;
     }
-    .line {
-      margin-bottom: 16px;
-      display: flex;
-      flex-wrap: wrap;
-    }
-    .pair {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: flex-start;
-      margin-right: 2px;
-    }
-    .chord {
-      color: var(--chord);
-      font-weight: bold;
-      font-size: 15px;
-      min-height: 20px;
-      font-family: monospace;
-      white-space: pre;
-    }
-    .lyric {
-      font-size: 16px;
-      white-space: pre;
-      min-height: 24px;
-    }
+    .line { margin-bottom: 16px; display: flex; flex-wrap: wrap; }
+    .pair { display: inline-flex; flex-direction: column; align-items: flex-start; margin-right: 2px; }
+    .chord { color: var(--chord); font-weight: bold; font-size: 15px; min-height: 20px; font-family: monospace; white-space: pre; }
+    .lyric { font-size: 16px; white-space: pre; min-height: 24px; }
     .editor-card {
-      background: var(--card);
-      padding: 20px;
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      background: var(--card); padding: 20px; border-radius: 10px; display: flex; flex-direction: column; gap: 12px;
     }
-    .input-row {
-      display: flex;
-      gap: 10px;
-    }
+    .input-row { display: flex; gap: 10px; }
     input, textarea {
-      background: #121212;
-      border: 1px solid #444;
-      color: #fff;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
+      background: #121212; border: 1px solid #444; color: #fff; padding: 10px;
+      border-radius: 6px; font-size: 14px; font-family: inherit;
     }
     .input-row input { flex: 1; }
-    textarea {
-      height: 280px;
-      resize: vertical;
-      line-height: 1.6;
-    }
+    textarea { height: 280px; resize: vertical; line-height: 1.6; }
     .save-btn { background: var(--accent); color: #000; border: none; padding: 10px; }
     .edit-btn { background: #3f51b5; color: #fff; border: none; }
     .delete-btn { background: var(--danger); color: #fff; border: none; }
@@ -242,7 +148,7 @@
         <textarea id="song-content" placeholder="ChordPro 형식:&#10;코드 없는 앞글자 [G]가사 [A]입력 [C]예시"></textarea>
         
         <div style="display: flex; gap: 8px;">
-          <button class="save-btn" style="flex: 2;" onclick="saveSong()">저장하기</button>
+          <button class="save-btn" id="submit-btn" style="flex: 2;" onclick="saveSong()">클라우드에 저장</button>
           <button class="cancel-btn" style="flex: 1;" onclick="switchTab('viewer')">취소</button>
         </div>
       </div>
@@ -250,35 +156,40 @@
   </div>
 
   <script>
+    // 파이어베이스 설정값 연동
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvSGuLo_9aY88xOvDfaMJnwmKYo76Ggps",
+      authDomain: "chords-note-b898c.firebaseapp.com",
+      projectId: "chords-note-b898c",
+      storageBucket: "chords-note-b898c.firebasestorage.app",
+      messagingSenderId: "727444360801",
+      appId: "1:727444360801:web:6d89bfaefbe7c4e0922420",
+      measurementId: "G-T78L01DED9"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     const scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     let transposeStep = 0;
     let currentSongKey = '';
     let editingSongId = null;
+    let songsData = {};
 
-    const defaultSongs = {
-      "sample-1": {
-        title: "고백",
-        artist: "델리스파이스",
-        capo: "4",
-        content: `[G]중2때까진 늘 첫 [A]째에 [C]겨우 160이 됐[G]을 무렵\n[G]쓸만한 녀석들은 [A]모두 다 [C]이미 첫사랑 진행 [G]중\n\n[Em]정말 듣고 싶었던 [A]말이야 물론 [C]2년전 일이지[G]만\n[Em]기뻐해야하는 게 당[A]연한데 내 [C]기분은 그게 아[G]냐\n하지만 [G]미안해 이 넓은 가슴[A]에 묻혀 다른 [C]누구를 생각[G]했었어\n미안해 너[G]의 손을 잡고 걸을 [A]때에도 떠올[C]렸었어 그 사람[G]을`
-      }
-    };
-
-    function getStorageSongs() {
-      const data = localStorage.getItem('my_guitar_chords');
-      return data ? JSON.parse(data) : defaultSongs;
-    }
-
-    function saveStorageSongs(songs) {
-      localStorage.setItem('my_guitar_chords', JSON.stringify(songs));
-    }
+    // Firestore 실시간 동기화
+    db.collection("songs").onSnapshot((snapshot) => {
+      songsData = {};
+      snapshot.forEach((doc) => {
+        songsData[doc.id] = doc.data();
+      });
+      updateDropdown();
+    });
 
     function updateDropdown() {
-      const songs = getStorageSongs();
       const select = document.getElementById('song-select');
       select.innerHTML = '';
 
-      const keys = Object.keys(songs);
+      const keys = Object.keys(songsData);
       if (keys.length === 0) {
         currentSongKey = '';
         loadSelectedSong();
@@ -288,12 +199,12 @@
       keys.forEach(key => {
         const opt = document.createElement('option');
         opt.value = key;
-        const capoText = songs[key].capo ? ` (Capo ${songs[key].capo})` : '';
-        opt.textContent = `${songs[key].title} - ${songs[key].artist}${capoText}`;
+        const capoText = (songsData[key].capo && songsData[key].capo !== '0') ? ` (Capo ${songsData[key].capo})` : '';
+        opt.textContent = `${songsData[key].title} - ${songsData[key].artist}${capoText}`;
         select.appendChild(opt);
       });
 
-      if (!currentSongKey || !songs[currentSongKey]) {
+      if (!currentSongKey || !songsData[currentSongKey]) {
         currentSongKey = keys[0];
       }
       select.value = currentSongKey;
@@ -301,7 +212,6 @@
     }
 
     function loadSelectedSong() {
-      const songs = getStorageSongs();
       const select = document.getElementById('song-select');
       if (select.value) currentSongKey = select.value;
 
@@ -309,8 +219,8 @@
       updateKeyDisplay();
 
       const capoDisplay = document.getElementById('capo-display');
-      if (currentSongKey && songs[currentSongKey] && songs[currentSongKey].capo) {
-        capoDisplay.textContent = `Capo ${songs[currentSongKey].capo}`;
+      if (currentSongKey && songsData[currentSongKey] && songsData[currentSongKey].capo && songsData[currentSongKey].capo !== '0') {
+        capoDisplay.textContent = `Capo ${songsData[currentSongKey].capo}`;
         capoDisplay.style.display = 'inline-block';
       } else {
         capoDisplay.style.display = 'none';
@@ -332,7 +242,6 @@
       });
     }
 
-    /* 문자 단위로 완벽하게 쪼개는 파서 */
     function parseChordLine(line) {
       const pairs = [];
       let i = 0;
@@ -358,7 +267,6 @@
           }
         }
 
-        // 코드 없이 시작하는 일반 텍스트 구간
         let nextOpen = line.indexOf('[', i);
         let lyric = '';
         if (nextOpen !== -1) {
@@ -375,16 +283,15 @@
     }
 
     function renderSheet() {
-      const songs = getStorageSongs();
       const output = document.getElementById('output');
       output.innerHTML = '';
 
-      if (!currentSongKey || !songs[currentSongKey]) {
-        output.innerHTML = '<div style="text-align:center; color:#888;">곡을 추가해 보세요.</div>';
+      if (!currentSongKey || !songsData[currentSongKey]) {
+        output.innerHTML = '<div style="text-align:center; color:#888;">클라우드에 등록된 곡이 없습니다. [새 곡 추가]에서 곡을 등록해 보세요!</div>';
         return;
       }
 
-      const songData = songs[currentSongKey].content;
+      const songData = songsData[currentSongKey].content;
       const lines = songData.split('\n');
 
       lines.forEach(lineText => {
@@ -394,9 +301,7 @@
           return;
         }
 
-        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-          return;
-        }
+        if (trimmed.startsWith('{') && trimmed.endsWith('}')) return;
 
         const lineDiv = document.createElement('div');
         lineDiv.className = 'line';
@@ -485,7 +390,6 @@
         editorTab.classList.add('hidden');
         btnViewer.classList.add('active');
         btnEditor.classList.remove('active');
-        updateDropdown();
       } else {
         viewerTab.classList.add('hidden');
         editorTab.classList.remove('hidden');
@@ -506,8 +410,7 @@
 
     function openEditorForEdit() {
       if (!currentSongKey) return;
-      const songs = getStorageSongs();
-      const song = songs[currentSongKey];
+      const song = songsData[currentSongKey];
       if (!song) return;
 
       editingSongId = currentSongKey;
@@ -519,7 +422,7 @@
       switchTab('editor');
     }
 
-    function saveSong() {
+    async function saveSong() {
       const title = document.getElementById('song-title').value.trim();
       const capo = document.getElementById('song-capo').value.trim();
       const artist = document.getElementById('song-artist').value.trim() || 'Unknown';
@@ -530,30 +433,44 @@
         return;
       }
 
-      const songs = getStorageSongs();
-      const id = editingSongId ? editingSongId : ('song_' + Date.now());
-      songs[id] = { title, capo, artist, content };
-      saveStorageSongs(songs);
+      const saveBtn = document.getElementById('submit-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = "클라우드 저장 중...";
 
-      currentSongKey = id;
-      editingSongId = null;
-      document.getElementById('btn-tab-editor').textContent = "새 곡 추가";
-      alert('저장되었습니다!');
-      switchTab('viewer');
+      try {
+        if (editingSongId) {
+          await db.collection("songs").doc(editingSongId).set({
+            title, capo, artist, content, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } else {
+          await db.collection("songs").add({
+            title, capo, artist, content, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
+        editingSongId = null;
+        document.getElementById('btn-tab-editor').textContent = "새 곡 추가";
+        alert('클라우드에 안전하게 저장되었습니다!');
+        switchTab('viewer');
+      } catch (err) {
+        alert('저장 실패: ' + err.message);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "클라우드에 저장";
+      }
     }
 
-    function deleteCurrentSong() {
+    async function deleteCurrentSong() {
       if (!currentSongKey) return;
-      if (!confirm('정말 이 곡을 삭제할까요?')) return;
+      if (!confirm('정말 이 곡을 삭제할까요? (모든 기기에서 함께 삭제됩니다)')) return;
 
-      const songs = getStorageSongs();
-      delete songs[currentSongKey];
-      saveStorageSongs(songs);
-      currentSongKey = '';
-      updateDropdown();
+      try {
+        await db.collection("songs").doc(currentSongKey).delete();
+        currentSongKey = '';
+      } catch (err) {
+        alert('삭제 실패: ' + err.message);
+      }
     }
-
-    updateDropdown();
   </script>
 </body>
 </html>
