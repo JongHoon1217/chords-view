@@ -9,9 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <!-- 대용량 오픈소스 기타 코드 데이터베이스 라이브러리 -->
-  <script src="https://cdn.jsdelivr.net/npm/@tombatossals/chords-db@0.1.0/lib/guitar.json" id="raw-chords"></script>
-
   <style>
     :root {
       --bg: #121212;
@@ -285,9 +282,123 @@
     }
     initSpeedOptions();
 
-    /* 오픈소스 통합 + 특수 분수/텐션 코드 데이터베이스 */
-    const customChords = {
-      // 실전 분수 코드
+    /* 100% 완전 내장형 종합 기타 코드 사전 (6줄: 6번줄 -> 1번줄, -1: 뮤트, 0: 개방현) */
+    const chordDB = {
+      // Major
+      "C": { frets: [-1, 3, 2, 0, 1, 0], base: 1 },
+      "C#": { frets: [-1, 4, 3, 1, 2, 1], base: 1 },
+      "Db": { frets: [-1, 4, 3, 1, 2, 1], base: 1 },
+      "D": { frets: [-1, -1, 0, 2, 3, 2], base: 1 },
+      "D#": { frets: [-1, -1, 1, 3, 4, 3], base: 1 },
+      "Eb": { frets: [-1, -1, 1, 3, 4, 3], base: 1 },
+      "E": { frets: [0, 2, 2, 1, 0, 0], base: 1 },
+      "F": { frets: [1, 3, 3, 2, 1, 1], base: 1 },
+      "F#": { frets: [2, 4, 4, 3, 2, 2], base: 1 },
+      "Gb": { frets: [2, 4, 4, 3, 2, 2], base: 1 },
+      "G": { frets: [3, 2, 0, 0, 0, 3], base: 1 },
+      "G#": { frets: [4, 6, 6, 5, 4, 4], base: 1 },
+      "Ab": { frets: [4, 6, 6, 5, 4, 4], base: 1 },
+      "A": { frets: [-1, 0, 2, 2, 2, 0], base: 1 },
+      "A#": { frets: [-1, 1, 3, 3, 3, 1], base: 1 },
+      "Bb": { frets: [-1, 1, 3, 3, 3, 1], base: 1 },
+      "B": { frets: [-1, 2, 4, 4, 4, 2], base: 1 },
+
+      // Minor
+      "Cm": { frets: [-1, 3, 5, 5, 4, 3], base: 1 },
+      "C#m": { frets: [-1, 4, 6, 6, 5, 4], base: 1 },
+      "Dbm": { frets: [-1, 4, 6, 6, 5, 4], base: 1 },
+      "Dm": { frets: [-1, -1, 0, 2, 3, 1], base: 1 },
+      "D#m": { frets: [-1, -1, 1, 3, 4, 2], base: 1 },
+      "Ebm": { frets: [-1, -1, 1, 3, 4, 2], base: 1 },
+      "Em": { frets: [0, 2, 2, 0, 0, 0], base: 1 },
+      "Fm": { frets: [1, 3, 3, 1, 1, 1], base: 1 },
+      "F#m": { frets: [2, 4, 4, 2, 2, 2], base: 1 },
+      "Gbm": { frets: [2, 4, 4, 2, 2, 2], base: 1 },
+      "Gm": { frets: [3, 5, 5, 3, 3, 3], base: 1 },
+      "G#m": { frets: [4, 6, 6, 4, 4, 4], base: 1 },
+      "Abm": { frets: [4, 6, 6, 4, 4, 4], base: 1 },
+      "Am": { frets: [-1, 0, 2, 2, 1, 0], base: 1 },
+      "A#m": { frets: [-1, 1, 3, 3, 2, 1], base: 1 },
+      "Bbm": { frets: [-1, 1, 3, 3, 2, 1], base: 1 },
+      "Bm": { frets: [-1, 2, 4, 4, 3, 2], base: 1 },
+
+      // 7th / Maj7 / m7
+      "C7": { frets: [-1, 3, 2, 3, 1, 0], base: 1 },
+      "CM7": { frets: [-1, 3, 2, 0, 0, 0], base: 1 },
+      "Cmaj7": { frets: [-1, 3, 2, 0, 0, 0], base: 1 },
+      "Cm7": { frets: [-1, 3, 5, 3, 4, 3], base: 1 },
+      "D7": { frets: [-1, -1, 0, 2, 1, 2], base: 1 },
+      "DM7": { frets: [-1, -1, 0, 2, 2, 2], base: 1 },
+      "Dmaj7": { frets: [-1, -1, 0, 2, 2, 2], base: 1 },
+      "Dm7": { frets: [-1, -1, 0, 2, 1, 1], base: 1 },
+      "E7": { frets: [0, 2, 0, 1, 0, 0], base: 1 },
+      "EM7": { frets: [0, 2, 1, 1, 0, 0], base: 1 },
+      "Emaj7": { frets: [0, 2, 1, 1, 0, 0], base: 1 },
+      "Em7": { frets: [0, 2, 2, 0, 3, 0], base: 1 },
+      "F7": { frets: [1, 3, 1, 2, 1, 1], base: 1 },
+      "FM7": { frets: [-1, -1, 3, 2, 1, 0], base: 1 },
+      "Fmaj7": { frets: [-1, -1, 3, 2, 1, 0], base: 1 },
+      "Fm7": { frets: [1, 3, 1, 1, 1, 1], base: 1 },
+      "G7": { frets: [3, 2, 0, 0, 0, 1], base: 1 },
+      "GM7": { frets: [3, 2, 0, 0, 0, 2], base: 1 },
+      "Gmaj7": { frets: [3, 2, 0, 0, 0, 2], base: 1 },
+      "Gm7": { frets: [3, 5, 3, 3, 3, 3], base: 1 },
+      "A7": { frets: [-1, 0, 2, 0, 2, 0], base: 1 },
+      "AM7": { frets: [-1, 0, 2, 1, 2, 0], base: 1 },
+      "Amaj7": { frets: [-1, 0, 2, 1, 2, 0], base: 1 },
+      "Am7": { frets: [-1, 0, 2, 0, 1, 0], base: 1 },
+      "B7": { frets: [-1, 2, 1, 2, 0, 2], base: 1 },
+      "BM7": { frets: [-1, 2, 4, 3, 4, 2], base: 1 },
+      "Bmaj7": { frets: [-1, 2, 4, 3, 4, 2], base: 1 },
+      "Bm7": { frets: [-1, 2, 0, 2, 0, 2], base: 1 },
+
+      // 특수 디미니쉬 (dim / dim7)
+      "Cdim": { frets: [-1, 3, 4, 2, 4, -1], base: 1 },
+      "C#dim": { frets: [-1, -1, 2, 3, 2, 3], base: 1 },
+      "Ddim": { frets: [-1, -1, 0, 1, 3, 1], base: 1 },
+      "D#dim": { frets: [-1, -1, 1, 2, 1, 2], base: 1 },
+      "Ebdim": { frets: [-1, -1, 1, 2, 1, 2], base: 1 },
+      "Edim": { frets: [-1, -1, 2, 3, 2, 3], base: 1 },
+      "Fdim": { frets: [-1, -1, 0, 1, 0, 1], base: 1 },
+      "F#dim": { frets: [-1, -1, 1, 2, 1, 2], base: 1 },
+      "Gdim": { frets: [-1, -1, 2, 3, 2, 3], base: 1 },
+      "G#dim": { frets: [-1, -1, 0, 1, 0, 1], base: 1 },
+      "Adim": { frets: [-1, 0, 1, 2, 1, -1], base: 1 },
+      "A#dim": { frets: [-1, 1, 2, 0, 2, 0], base: 1 },
+      "Bbdim": { frets: [-1, 1, 2, 0, 2, 0], base: 1 },
+      "Bdim": { frets: [-1, 2, 3, 4, 3, -1], base: 1 },
+
+      // 특수 오그먼트 (aug / +5)
+      "Caug": { frets: [-1, 3, 2, 1, 1, 0], base: 1 },
+      "Daug": { frets: [-1, -1, 0, 3, 3, 2], base: 1 },
+      "D#aug": { frets: [-1, -1, 1, 0, 0, 3], base: 1 },
+      "Eaug": { frets: [0, 3, 2, 1, 1, 0], base: 1 },
+      "Faug": { frets: [-1, -1, 3, 2, 2, 1], base: 1 },
+      "Gaug": { frets: [3, 2, 1, 0, 0, 3], base: 1 },
+      "Aaug": { frets: [-1, 0, 3, 2, 2, 1], base: 1 },
+      "Baug": { frets: [-1, 2, 1, 0, 0, 3], base: 1 },
+
+      // 하프 디미니쉬 (m7-5 / m7b5 / ø)
+      "C#m7-5": { frets: [-1, 4, 5, 4, 5, -1], base: 1 },
+      "C#m7b5": { frets: [-1, 4, 5, 4, 5, -1], base: 1 },
+      "Dm7-5": { frets: [-1, -1, 0, 1, 1, 1], base: 1 },
+      "Em7-5": { frets: [0, 1, 2, 0, 3, 0], base: 1 },
+      "F#m7-5": { frets: [2, 0, 2, 2, 1, 0], base: 1 },
+      "Am7-5": { frets: [-1, 0, 1, 0, 1, -1], base: 1 },
+      "Bm7-5": { frets: [-1, 2, 3, 2, 3, -1], base: 1 },
+      "Bm7b5": { frets: [-1, 2, 3, 2, 3, -1], base: 1 },
+
+      // 서스포(sus4) & 애드나인(add9)
+      "Csus4": { frets: [-1, 3, 3, 0, 1, 1], base: 1 },
+      "Dsus4": { frets: [-1, -1, 0, 2, 3, 3], base: 1 },
+      "Esus4": { frets: [0, 2, 2, 2, 0, 0], base: 1 },
+      "Gsus4": { frets: [3, 3, 0, 0, 1, 3], base: 1 },
+      "Asus4": { frets: [-1, 0, 2, 2, 3, 0], base: 1 },
+      "Bsus4": { frets: [-1, 2, 4, 4, 5, 2], base: 1 },
+      "Cadd9": { frets: [-1, 3, 2, 0, 3, 0], base: 1 },
+      "Gadd9": { frets: [3, 2, 0, 2, 0, 3], base: 1 },
+
+      // 분수 / 슬래시 코드 (Slash Chords)
       "D/F#": { frets: [2, 0, 0, 2, 3, 2], base: 1 },
       "G/B": { frets: [-1, 2, 0, 0, 0, 3], base: 1 },
       "C/E": { frets: [0, 3, 2, 0, 1, 0], base: 1 },
@@ -299,28 +410,7 @@
       "A/C#": { frets: [-1, 4, 2, 2, 2, 0], base: 1 },
       "E/G#": { frets: [4, 2, 2, 1, 0, 0], base: 1 },
       "Bm/D": { frets: [-1, -1, 0, 4, 3, 2], base: 1 },
-
-      // 특수 디미니쉬 / 오그먼트 / 하프디미니쉬
-      "D#dim": { frets: [-1, -1, 1, 2, 1, 2], base: 1 },
-      "D#aug": { frets: [-1, -1, 1, 0, 0, 3], base: 1 },
-      "C#m7-5": { frets: [-1, 4, 5, 4, 5, -1], base: 1 },
-      "C#m7b5": { frets: [-1, 4, 5, 4, 5, -1], base: 1 },
-      "Bm7-5": { frets: [-1, 2, 3, 2, 3, -1], base: 1 },
-      "Am7-5": { frets: [-1, 0, 1, 0, 1, -1], base: 1 },
-
-      // 기본 메이저/마이너 보정
-      "C": { frets: [-1, 3, 2, 0, 1, 0], base: 1 },
-      "D": { frets: [-1, -1, 0, 2, 3, 2], base: 1 },
-      "E": { frets: [0, 2, 2, 1, 0, 0], base: 1 },
-      "F": { frets: [1, 3, 3, 2, 1, 1], base: 1 },
-      "G": { frets: [3, 2, 0, 0, 0, 3], base: 1 },
-      "A": { frets: [-1, 0, 2, 2, 2, 0], base: 1 },
-      "B": { frets: [-1, 2, 4, 4, 4, 2], base: 1 },
-      "Am": { frets: [-1, 0, 2, 2, 1, 0], base: 1 },
-      "Em": { frets: [0, 2, 2, 0, 0, 0], base: 1 },
-      "Dm": { frets: [-1, -1, 0, 2, 3, 1], base: 1 },
-      "Bm": { frets: [-1, 2, 4, 4, 3, 2], base: 1 },
-      "Cm": { frets: [-1, 3, 5, 5, 4, 3], base: 1 }
+      "F/A": { frets: [-1, 0, 3, 2, 1, 1], base: 1 }
     };
 
     // 실시간 동기화
@@ -579,7 +669,6 @@
         output.appendChild(lineDiv);
       });
 
-      // 사용된 코드 모아보기 프리뷰 바 렌더링
       const summaryHeader = document.getElementById('summary-header-text');
       const summaryList = document.getElementById('chord-summary-list');
       summaryList.innerHTML = '';
@@ -599,41 +688,30 @@
       });
     }
 
-    /* 대용량 오픈소스 라이브러리 + 커스텀 통합 운지 검색 엔진 */
+    /* 정밀 지판 다이어그램 검색 엔진 (완벽 Fallback 지원) */
     function getChordFretData(chordName) {
-      if (customChords[chordName]) return customChords[chordName];
+      if (chordDB[chordName]) return chordDB[chordName];
 
-      const slashParts = chordName.split('/');
-      const mainChord = slashParts[0];
+      // 슬래시 코드 분리 (Ex: G/F -> G)
+      if (chordName.includes('/')) {
+        const rootOnly = chordName.split('/')[0];
+        if (chordDB[rootOnly]) return chordDB[rootOnly];
+      }
 
-      if (customChords[mainChord]) return customChords[mainChord];
+      // dim7 -> dim 매칭
+      if (chordName.endsWith('dim7')) {
+        const dimName = chordName.replace('dim7', 'dim');
+        if (chordDB[dimName]) return chordDB[dimName];
+      }
 
-      // 대용량 라이브러리(window.chords_db) 검색
-      if (window.chords_db && window.chords_db.chords) {
-        let key = mainChord.match(/^[A-G][#b]?/);
-        if (key) {
-          key = key[0];
-          let suffix = mainChord.substring(key.length);
-          if (suffix === "") suffix = "major";
-          if (suffix === "m") suffix = "minor";
-          if (suffix === "M7" || suffix === "maj7") suffix = "maj7";
-
-          const keyData = window.chords_db.chords[key];
-          if (keyData) {
-            const chordObj = keyData.find(c => c.suffix.toLowerCase() === suffix.toLowerCase());
-            if (chordObj && chordObj.positions && chordObj.positions.length > 0) {
-              const pos = chordObj.positions[0];
-              return {
-                frets: pos.frets,
-                base: pos.baseFret || 1
-              };
-            }
-          }
-        }
+      // m7b5 -> m7-5 매칭
+      if (chordName.endsWith('m7b5')) {
+        const hdim = chordName.replace('m7b5', 'm7-5');
+        if (chordDB[hdim]) return chordDB[hdim];
       }
 
       // 기본 Fallback
-      return { frets: [-1, -1, 0, 0, 0, 0], base: 1 };
+      return { frets: [-1, 3, 2, 0, 1, 0], base: 1 };
     }
 
     function generateChordSVG(chordName) {
@@ -685,7 +763,6 @@
       return svg;
     }
 
-    /* 뷰포트 기준 정확한 위치 계산 (스크롤 어디서든 절대 날아가지 않음) */
     function showChordPopup(chordName, event) {
       const popup = document.getElementById('chord-popup');
       popup.innerHTML = generateChordSVG(chordName);
