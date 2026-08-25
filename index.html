@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>나만의 기타 악보 보관함</title>
   
-  <!-- Firebase SDK 로드 -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
@@ -13,13 +13,19 @@
     :root {
       --bg: #121212;
       --card: #1e1e1e;
+      --card-border: #333333;
       --text: #f0f0f0;
+      --text-sub: #9e9e9e;
       --chord: #ff9800;
+      --ruby-color: #4fc3f7;
       --btn-bg: #2d2d2d;
       --btn-hover: #404040;
       --accent: #00bcd4;
       --danger: #f44336;
+      --danger-hover: #d32f2f;
+      --font-size: 16px;
     }
+    * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
@@ -29,61 +35,273 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      min-height: 100vh;
     }
-    .container { max-width: 650px; width: 100%; }
-    .tab-bar { display: flex; gap: 10px; margin-bottom: 15px; }
+    .container {
+      max-width: 680px;
+      width: 100%;
+    }
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
     .tab-btn {
-      flex: 1; padding: 10px; background: var(--btn-bg); color: var(--text);
-      border: 1px solid #444; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;
+      flex: 1;
+      padding: 12px;
+      background: var(--btn-bg);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
     }
-    .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+
+    /* 1. 곡 목록 뷰 */
+    .search-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 15px;
+      margin-bottom: 15px;
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .song-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .song-item {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .song-item:hover {
+      background: #282828;
+      border-color: var(--accent);
+    }
+    .song-item-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .song-item-sub {
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+    .song-item-badge {
+      font-size: 12px;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+
+    /* 2. 악보 뷰어 화면 */
     .toolbar {
-      position: sticky; top: 10px; background: var(--card); padding: 12px 16px;
-      border-radius: 10px; display: flex; flex-direction: column; gap: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 15px; z-index: 100;
+      position: sticky;
+      top: 10px;
+      background: var(--card);
+      padding: 12px 16px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      margin-bottom: 15px;
+      z-index: 100;
+      border: 1px solid var(--card-border);
     }
-    .tool-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-    .btn-group { display: flex; gap: 6px; align-items: center; }
+    .tool-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
     button {
-      background: var(--btn-bg); color: var(--text); border: 1px solid #444;
-      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;
+      background: var(--btn-bg);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      padding: 7px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
     }
     button:hover { background: var(--btn-hover); }
-    .key-badge, .capo-badge {
-      font-size: 13px; font-weight: bold; padding: 3px 8px; background: #2a2a2a;
-      border-radius: 4px; border: 1px solid #3d3d3d;
+    .key-badge, .capo-badge, .font-badge {
+      font-size: 13px;
+      font-weight: bold;
+      padding: 4px 8px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      border: 1px solid #3d3d3d;
     }
     .capo-badge { color: var(--accent); }
     .speed-select {
-      background: var(--btn-bg); color: var(--text); border: 1px solid #444;
-      padding: 5px 8px; border-radius: 6px; font-size: 13px;
+      background: var(--btn-bg);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 13px;
     }
-    select#song-select {
-      background: var(--btn-bg); color: var(--text); border: 1px solid #444;
-      padding: 10px 12px; border-radius: 6px; font-size: 14px; width: 100%; margin-bottom: 10px;
+
+    .song-header-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
     }
+    .song-header-title {
+      font-size: 20px;
+      font-weight: bold;
+    }
+    .song-header-artist {
+      font-size: 14px;
+      color: var(--text-sub);
+    }
+
     .sheet-card {
-      background: var(--card); padding: 20px; border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3); font-size: 16px; line-height: 1.8;
+      background: var(--card);
+      padding: 24px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      line-height: 2.2;
     }
-    .line { margin-bottom: 16px; display: flex; flex-wrap: wrap; }
-    .pair { display: inline-flex; flex-direction: column; align-items: flex-start; margin-right: 2px; }
-    .chord { color: var(--chord); font-weight: bold; font-size: 15px; min-height: 20px; font-family: monospace; white-space: pre; }
-    .lyric { font-size: 16px; white-space: pre; min-height: 24px; }
+    .line {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .pair {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-right: 3px;
+      position: relative;
+    }
+    .chord-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .chord {
+      color: var(--chord);
+      font-weight: bold;
+      font-size: calc(var(--font-size) - 1px);
+      min-height: 22px;
+      font-family: monospace;
+      white-space: pre;
+      cursor: pointer;
+      border-bottom: 1px dotted rgba(255, 152, 0, 0.4);
+      padding: 0 1px;
+    }
+    .chord:hover {
+      color: #ffb74d;
+      border-bottom-color: #ffb74d;
+    }
+    ruby {
+      display: inline-flex;
+      flex-direction: column-reverse;
+      vertical-align: bottom;
+      text-align: center;
+    }
+    rt {
+      font-size: calc(var(--font-size) * 0.68);
+      color: var(--ruby-color);
+      line-height: 1.2;
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+    .lyric {
+      font-size: var(--font-size);
+      white-space: pre;
+      min-height: 24px;
+    }
+
+    /* 코드 팝업 툴팁 다이어그램 */
+    .chord-popup {
+      position: fixed;
+      background: #000;
+      border: 2px solid #555;
+      border-radius: 8px;
+      padding: 8px 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+      z-index: 1000;
+      display: none;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    /* 3. 에디터 폼 */
     .editor-card {
-      background: var(--card); padding: 20px; border-radius: 10px; display: flex; flex-direction: column; gap: 12px;
+      background: var(--card);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
     .input-row { display: flex; gap: 10px; }
     input, textarea {
-      background: #121212; border: 1px solid #444; color: #fff; padding: 10px;
-      border-radius: 6px; font-size: 14px; font-family: inherit;
+      background: #121212;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
     }
     .input-row input { flex: 1; }
-    textarea { height: 280px; resize: vertical; line-height: 1.6; }
-    .save-btn { background: var(--accent); color: #000; border: none; padding: 10px; }
+    textarea {
+      height: 300px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    .save-btn { background: var(--accent); color: #000; border: none; padding: 12px; }
     .edit-btn { background: #3f51b5; color: #fff; border: none; }
-    .delete-btn { background: var(--danger); color: #fff; border: none; }
-    .cancel-btn { background: #555; color: #fff; border: none; padding: 10px; }
+    .delete-btn {
+      background: rgba(244, 67, 54, 0.15);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      padding: 10px;
+      margin-top: 10px;
+    }
+    .delete-btn:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+    .cancel-btn { background: #555; color: #fff; border: none; padding: 12px; }
     .hidden { display: none !important; }
   </style>
 </head>
@@ -91,17 +309,23 @@
 
   <div class="container">
     <div class="tab-bar">
-      <button class="tab-btn active" id="btn-tab-viewer" onclick="switchTab('viewer')">악보 보기</button>
+      <button class="tab-btn active" id="btn-tab-list" onclick="switchTab('list')">곡 목록</button>
+      <button class="tab-btn" id="btn-tab-viewer" onclick="switchTab('viewer')">악보 보기</button>
       <button class="tab-btn" id="btn-tab-editor" onclick="openEditorForNew()">새 곡 추가</button>
     </div>
 
-    <!-- 1. 악보 뷰어 화면 -->
-    <div id="viewer-tab">
-      <select id="song-select" onchange="loadSelectedSong()"></select>
+    <!-- 1. 곡 목록 및 검색 뷰 -->
+    <div id="list-tab">
+      <input type="text" id="search-input" class="search-input" placeholder="🔍 곡 제목 또는 아티스트 검색..." oninput="renderSongList()">
+      <div class="song-list" id="song-list-container"></div>
+    </div>
 
+    <!-- 2. 악보 뷰어 화면 -->
+    <div id="viewer-tab" class="hidden">
       <div class="toolbar">
         <div class="tool-row">
           <div class="btn-group">
+            <button onclick="switchTab('list')">← 목록</button>
             <span>Key:</span>
             <button onclick="changeKey(-1)">-1</button>
             <button onclick="changeKey(1)">+1</button>
@@ -109,8 +333,10 @@
             <span class="capo-badge" id="capo-display">Capo 0</span>
           </div>
           <div class="btn-group">
+            <span>크기:</span>
+            <button onclick="adjustFontSize(-1)">A-</button>
+            <button onclick="adjustFontSize(1)">A+</button>
             <button class="edit-btn" onclick="openEditorForEdit()">수정</button>
-            <button class="delete-btn" onclick="deleteCurrentSong()">삭제</button>
           </div>
         </div>
 
@@ -134,29 +360,42 @@
         </div>
       </div>
 
+      <div class="song-header-info">
+        <div>
+          <div class="song-header-title" id="view-title">-</div>
+          <div class="song-header-artist" id="view-artist">-</div>
+        </div>
+      </div>
+
       <div class="sheet-card" id="output"></div>
     </div>
 
-    <!-- 2. 곡 추가/수정 에디터 -->
+    <!-- 3. 곡 추가/수정 에디터 -->
     <div id="editor-tab" class="hidden">
       <div class="editor-card">
         <div class="input-row">
-          <input type="text" id="song-title" placeholder="곡 제목 (예: 고백)" style="flex: 2;">
+          <input type="text" id="song-title" placeholder="곡 제목 (예: 고백 / Soranji)" style="flex: 2;">
           <input type="text" id="song-capo" placeholder="카포 위치 (예: 4)" style="flex: 1;">
         </div>
-        <input type="text" id="song-artist" placeholder="아티스트 (예: 델리스파이스)">
-        <textarea id="song-content" placeholder="ChordPro 형식:&#10;코드 없는 앞글자 [G]가사 [A]입력 [C]예시"></textarea>
+        <input type="text" id="song-artist" placeholder="아티스트 (예: 델리스파이스 / Mrs. GREEN APPLE)">
+        <textarea id="song-content" placeholder="ChordPro 형식 입력:&#10;1) 일반: [G]가사 [A]입력 [C]예시&#10;2) 일본어 3단: [G](流れる/나가레루) [C](星/호시)"></textarea>
         
         <div style="display: flex; gap: 8px;">
           <button class="save-btn" id="submit-btn" style="flex: 2;" onclick="saveSong()">클라우드에 저장</button>
-          <button class="cancel-btn" style="flex: 1;" onclick="switchTab('viewer')">취소</button>
+          <button class="cancel-btn" style="flex: 1;" onclick="switchTab(currentSongKey ? 'viewer' : 'list')">취소</button>
         </div>
+
+        <!-- 수정 모드일 때만 나타나는 안전 삭제 버튼 -->
+        <button id="editor-delete-btn" class="delete-btn hidden" onclick="deleteCurrentSong()">이 곡 삭제하기</button>
       </div>
     </div>
   </div>
 
+  <!-- 호버 시 나타나는 코드 운지 다이어그램 팝업 -->
+  <div id="chord-popup" class="chord-popup"></div>
+
   <script>
-    // 파이어베이스 설정값 연동
+    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyDvSGuLo_9aY88xOvDfaMJnwmKYo76Ggps",
       authDomain: "chords-note-b898c.firebaseapp.com",
@@ -175,52 +414,152 @@
     let currentSongKey = '';
     let editingSongId = null;
     let songsData = {};
+    let currentFontSize = parseInt(localStorage.getItem('my_chord_font_size')) || 16;
+    document.documentElement.style.setProperty('--font-size', `${currentFontSize}px`);
 
-    // Firestore 실시간 동기화
+    /* 기타 코드 데이터베이스 */
+    const chordDB = {
+      "C": { frets: [-1, 3, 2, 0, 1, 0], base: 1 },
+      "C#": { frets: [-1, 4, 3, 1, 2, 1], base: 1 },
+      "Db": { frets: [-1, 4, 3, 1, 2, 1], base: 1 },
+      "D": { frets: [-1, -1, 0, 2, 3, 2], base: 1 },
+      "D#": { frets: [-1, -1, 1, 3, 4, 3], base: 1 },
+      "Eb": { frets: [-1, -1, 1, 3, 4, 3], base: 1 },
+      "E": { frets: [0, 2, 2, 1, 0, 0], base: 1 },
+      "F": { frets: [1, 3, 3, 2, 1, 1], base: 1 },
+      "F#": { frets: [2, 4, 4, 3, 2, 2], base: 1 },
+      "Gb": { frets: [2, 4, 4, 3, 2, 2], base: 1 },
+      "G": { frets: [3, 2, 0, 0, 0, 3], base: 1 },
+      "G#": { frets: [4, 6, 6, 5, 4, 4], base: 1 },
+      "Ab": { frets: [4, 6, 6, 5, 4, 4], base: 1 },
+      "A": { frets: [-1, 0, 2, 2, 2, 0], base: 1 },
+      "A#": { frets: [-1, 1, 3, 3, 3, 1], base: 1 },
+      "Bb": { frets: [-1, 1, 3, 3, 3, 1], base: 1 },
+      "B": { frets: [-1, 2, 4, 4, 4, 2], base: 1 },
+
+      "Cm": { frets: [-1, 3, 5, 5, 4, 3], base: 1 },
+      "C#m": { frets: [-1, 4, 6, 6, 5, 4], base: 1 },
+      "Dm": { frets: [-1, -1, 0, 2, 3, 1], base: 1 },
+      "D#m": { frets: [-1, -1, 1, 3, 4, 2], base: 1 },
+      "Ebm": { frets: [-1, -1, 1, 3, 4, 2], base: 1 },
+      "Em": { frets: [0, 2, 2, 0, 0, 0], base: 1 },
+      "Fm": { frets: [1, 3, 3, 1, 1, 1], base: 1 },
+      "F#m": { frets: [2, 4, 4, 2, 2, 2], base: 1 },
+      "Gm": { frets: [3, 5, 5, 3, 3, 3], base: 1 },
+      "G#m": { frets: [4, 6, 6, 4, 4, 4], base: 1 },
+      "Am": { frets: [-1, 0, 2, 2, 1, 0], base: 1 },
+      "A#m": { frets: [-1, 1, 3, 3, 2, 1], base: 1 },
+      "Bbm": { frets: [-1, 1, 3, 3, 2, 1], base: 1 },
+      "Bm": { frets: [-1, 2, 4, 4, 3, 2], base: 1 },
+
+      "C7": { frets: [-1, 3, 2, 3, 1, 0], base: 1 },
+      "CM7": { frets: [-1, 3, 2, 0, 0, 0], base: 1 },
+      "Cmaj7": { frets: [-1, 3, 2, 0, 0, 0], base: 1 },
+      "D7": { frets: [-1, -1, 0, 2, 1, 2], base: 1 },
+      "DM7": { frets: [-1, -1, 0, 2, 2, 2], base: 1 },
+      "Dm7": { frets: [-1, -1, 0, 2, 1, 1], base: 1 },
+      "E7": { frets: [0, 2, 0, 1, 0, 0], base: 1 },
+      "EM7": { frets: [0, 2, 1, 1, 0, 0], base: 1 },
+      "Em7": { frets: [0, 2, 2, 0, 3, 0], base: 1 },
+      "FM7": { frets: [-1, -1, 3, 2, 1, 0], base: 1 },
+      "Fmaj7": { frets: [-1, -1, 3, 2, 1, 0], base: 1 },
+      "G7": { frets: [3, 2, 0, 0, 0, 1], base: 1 },
+      "GM7": { frets: [3, 2, 0, 0, 0, 2], base: 1 },
+      "A7": { frets: [-1, 0, 2, 0, 2, 0], base: 1 },
+      "AM7": { frets: [-1, 0, 2, 1, 2, 0], base: 1 },
+      "Am7": { frets: [-1, 0, 2, 0, 1, 0], base: 1 },
+      "B7": { frets: [-1, 2, 1, 2, 0, 2], base: 1 },
+      "BM7": { frets: [-1, 2, 4, 3, 4, 2], base: 1 },
+      "Bm7": { frets: [-1, 2, 0, 2, 0, 2], base: 1 },
+
+      "Csus4": { frets: [-1, 3, 3, 0, 1, 1], base: 1 },
+      "Dsus4": { frets: [-1, -1, 0, 2, 3, 3], base: 1 },
+      "Esus4": { frets: [0, 2, 2, 2, 0, 0], base: 1 },
+      "Gsus4": { frets: [3, 3, 0, 0, 1, 3], base: 1 },
+      "Asus4": { frets: [-1, 0, 2, 2, 3, 0], base: 1 },
+      "Cadd9": { frets: [-1, 3, 2, 0, 3, 0], base: 1 }
+    };
+
+    // 실시간 동기화
     db.collection("songs").onSnapshot((snapshot) => {
       songsData = {};
       snapshot.forEach((doc) => {
         songsData[doc.id] = doc.data();
       });
-      updateDropdown();
+      renderSongList();
+      if (currentSongKey && songsData[currentSongKey]) {
+        loadSong(currentSongKey);
+      }
     });
 
-    function updateDropdown() {
-      const select = document.getElementById('song-select');
-      select.innerHTML = '';
+    /* 글자 크기 조절 엔진 */
+    function adjustFontSize(delta) {
+      currentFontSize = Math.max(12, Math.min(24, currentFontSize + delta));
+      document.documentElement.style.setProperty('--font-size', `${currentFontSize}px`);
+      localStorage.setItem('my_chord_font_size', currentFontSize);
+    }
+
+    /* 곡 목록 렌더링 & 검색 */
+    function renderSongList() {
+      const container = document.getElementById('song-list-container');
+      const query = document.getElementById('search-input').value.toLowerCase().trim();
+      container.innerHTML = '';
 
       const keys = Object.keys(songsData);
       if (keys.length === 0) {
-        currentSongKey = '';
-        loadSelectedSong();
+        container.innerHTML = '<div style="text-align:center; color:#888; padding:30px;">등록된 곡이 없습니다. [새 곡 추가]를 눌러보세요!</div>';
         return;
       }
 
-      keys.forEach(key => {
-        const opt = document.createElement('option');
-        opt.value = key;
-        const capoText = (songsData[key].capo && songsData[key].capo !== '0') ? ` (Capo ${songsData[key].capo})` : '';
-        opt.textContent = `${songsData[key].title} - ${songsData[key].artist}${capoText}`;
-        select.appendChild(opt);
+      let count = 0;
+      keys.forEach(id => {
+        const song = songsData[id];
+        const matchTitle = song.title && song.title.toLowerCase().includes(query);
+        const matchArtist = song.artist && song.artist.toLowerCase().includes(query);
+
+        if (!query || matchTitle || matchArtist) {
+          count++;
+          const item = document.createElement('div');
+          item.className = 'song-item';
+          item.onclick = () => selectAndOpenSong(id);
+
+          const capoBadge = (song.capo && song.capo !== '0') ? `<span class="song-item-badge">Capo ${song.capo}</span>` : '';
+
+          item.innerHTML = `
+            <div>
+              <div class="song-item-title">${song.title || '제목 없음'}</div>
+              <div class="song-item-sub">${song.artist || 'Unknown'}</div>
+            </div>
+            ${capoBadge}
+          `;
+          container.appendChild(item);
+        }
       });
 
-      if (!currentSongKey || !songsData[currentSongKey]) {
-        currentSongKey = keys[0];
+      if (count === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#888; padding:30px;">검색 결과가 없습니다.</div>';
       }
-      select.value = currentSongKey;
-      loadSelectedSong();
     }
 
-    function loadSelectedSong() {
-      const select = document.getElementById('song-select');
-      if (select.value) currentSongKey = select.value;
+    function selectAndOpenSong(id) {
+      currentSongKey = id;
+      loadSong(id);
+      switchTab('viewer');
+    }
+
+    function loadSong(id) {
+      const song = songsData[id];
+      if (!song) return;
+
+      document.getElementById('view-title').textContent = song.title || '제목 없음';
+      document.getElementById('view-artist').textContent = song.artist || 'Unknown';
 
       transposeStep = 0;
       updateKeyDisplay();
 
       const capoDisplay = document.getElementById('capo-display');
-      if (currentSongKey && songsData[currentSongKey] && songsData[currentSongKey].capo && songsData[currentSongKey].capo !== '0') {
-        capoDisplay.textContent = `Capo ${songsData[currentSongKey].capo}`;
+      if (song.capo && song.capo !== '0') {
+        capoDisplay.textContent = `Capo ${song.capo}`;
         capoDisplay.style.display = 'inline-block';
       } else {
         capoDisplay.style.display = 'none';
@@ -254,32 +593,45 @@
             i = closeIndex + 1;
 
             let nextOpen = line.indexOf('[', i);
-            let lyric = '';
+            let rawSegment = '';
             if (nextOpen !== -1) {
-              lyric = line.substring(i, nextOpen);
+              rawSegment = line.substring(i, nextOpen);
               i = nextOpen;
             } else {
-              lyric = line.substring(i);
+              rawSegment = line.substring(i);
               i = line.length;
             }
-            pairs.push({ chord: chord, lyric: lyric });
+            pairs.push(createPairItem(chord, rawSegment));
             continue;
           }
         }
 
         let nextOpen = line.indexOf('[', i);
-        let lyric = '';
+        let rawSegment = '';
         if (nextOpen !== -1) {
-          lyric = line.substring(i, nextOpen);
+          rawSegment = line.substring(i, nextOpen);
           i = nextOpen;
         } else {
-          lyric = line.substring(i);
+          rawSegment = line.substring(i);
           i = line.length;
         }
-        pairs.push({ chord: '', lyric: lyric });
+        pairs.push(createPairItem('', rawSegment));
       }
 
       return pairs;
+    }
+
+    function createPairItem(chord, rawSegment) {
+      const rubyRegex = /\(([^/]+)\/([^)]+)\)/;
+      const match = rawSegment.match(rubyRegex);
+
+      if (match) {
+        const kanji = match[1];
+        const reading = match[2];
+        const rest = rawSegment.replace(match[0], '');
+        return { chord, kanji, reading, rest, isRuby: true };
+      }
+      return { chord, lyric: rawSegment, isRuby: false };
     }
 
     function renderSheet() {
@@ -287,7 +639,7 @@
       output.innerHTML = '';
 
       if (!currentSongKey || !songsData[currentSongKey]) {
-        output.innerHTML = '<div style="text-align:center; color:#888;">클라우드에 등록된 곡이 없습니다. [새 곡 추가]에서 곡을 등록해 보세요!</div>';
+        output.innerHTML = '<div style="text-align:center; color:#888;">곡을 선택해 주세요.</div>';
         return;
       }
 
@@ -312,22 +664,135 @@
           const pair = document.createElement('div');
           pair.className = 'pair';
 
-          const chordSpan = document.createElement('span');
-          chordSpan.className = 'chord';
-          chordSpan.textContent = p.chord ? transposeChord(p.chord, transposeStep) : '';
+          const chordWrap = document.createElement('div');
+          chordWrap.className = 'chord-wrap';
 
-          const lyricSpan = document.createElement('span');
-          lyricSpan.className = 'lyric';
-          lyricSpan.textContent = p.lyric;
+          if (p.chord) {
+            const transposed = transposeChord(p.chord, transposeStep);
+            const chordSpan = document.createElement('span');
+            chordSpan.className = 'chord';
+            chordSpan.textContent = transposed;
+            
+            chordSpan.onmouseenter = (e) => showChordPopup(transposed, e);
+            chordSpan.onmouseleave = hideChordPopup;
+            chordSpan.ontouchstart = (e) => showChordPopup(transposed, e);
 
-          pair.appendChild(chordSpan);
-          pair.appendChild(lyricSpan);
+            chordWrap.appendChild(chordSpan);
+          } else {
+            const emptyChord = document.createElement('span');
+            emptyChord.className = 'chord';
+            emptyChord.style.borderBottom = 'none';
+            emptyChord.innerHTML = '&nbsp;';
+            chordWrap.appendChild(emptyChord);
+          }
+          pair.appendChild(chordWrap);
+
+          if (p.isRuby) {
+            const ruby = document.createElement('ruby');
+            const rt = document.createElement('rt');
+            rt.textContent = p.reading;
+            ruby.appendChild(document.createTextNode(p.kanji));
+            ruby.appendChild(rt);
+
+            const wrapSpan = document.createElement('span');
+            wrapSpan.className = 'lyric';
+            wrapSpan.appendChild(ruby);
+            if (p.rest) wrapSpan.appendChild(document.createTextNode(p.rest));
+            pair.appendChild(wrapSpan);
+          } else {
+            const lyricSpan = document.createElement('span');
+            lyricSpan.className = 'lyric';
+            lyricSpan.textContent = p.lyric;
+            pair.appendChild(lyricSpan);
+          }
+
           lineDiv.appendChild(pair);
         });
 
         output.appendChild(lineDiv);
       });
     }
+
+    function generateChordSVG(chordName) {
+      let data = chordDB[chordName];
+      if (!data) {
+        const rootOnly = chordName.split('/')[0];
+        data = chordDB[rootOnly];
+      }
+
+      if (!data) {
+        return `<div style="color:#aaa; font-size:12px; padding:8px;">${chordName}<br>운지표 준비중</div>`;
+      }
+
+      const { frets, base } = data;
+      const width = 110;
+      const height = 140;
+      const startX = 20;
+      const startY = 35;
+      const stringGap = 14;
+      const fretGap = 20;
+
+      let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+      svg += `<text x="${width/2}" y="20" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">${chordName}</text>`;
+
+      if (base === 1) {
+        svg += `<line x1="${startX}" y1="${startY}" x2="${startX + stringGap * 5}" y2="${startY}" stroke="#fff" stroke-width="4"/>`;
+      } else {
+        svg += `<text x="${startX - 12}" y="${startY + 14}" fill="#aaa" font-size="11">${base}fr</text>`;
+      }
+
+      for (let i = 0; i <= 4; i++) {
+        const y = startY + i * fretGap;
+        svg += `<line x1="${startX}" y1="${y}" x2="${startX + stringGap * 5}" y2="${y}" stroke="#444" stroke-width="1.2"/>`;
+      }
+
+      for (let i = 0; i < 6; i++) {
+        const x = startX + i * stringGap;
+        svg += `<line x1="${x}" y1="${startY}" x2="${x}" y2="${startY + fretGap * 4}" stroke="#777" stroke-width="${1.8 - i * 0.2}"/>`;
+      }
+
+      frets.forEach((fret, strIdx) => {
+        const x = startX + strIdx * stringGap;
+        if (fret === -1) {
+          svg += `<text x="${x}" y="${startY - 6}" fill="#f44336" font-size="12" font-weight="bold" text-anchor="middle">×</text>`;
+        } else if (fret === 0) {
+          svg += `<circle cx="${x}" cy="${startY - 8}" r="3" fill="none" stroke="#fff" stroke-width="1.2"/>`;
+        } else {
+          const fretPos = fret - base + 1;
+          if (fretPos >= 1 && fretPos <= 4) {
+            const y = startY + fretPos * fretGap - fretGap / 2;
+            svg += `<circle cx="${x}" cy="${y}" r="5.5" fill="#fff"/>`;
+          }
+        }
+      });
+
+      svg += `</svg>`;
+      return svg;
+    }
+
+    function showChordPopup(chordName, event) {
+      const popup = document.getElementById('chord-popup');
+      popup.innerHTML = generateChordSVG(chordName);
+      popup.style.display = 'block';
+
+      const rect = event.target.getBoundingClientRect();
+      const popupWidth = 130;
+      let left = rect.left + window.scrollX - (popupWidth / 2) + (rect.width / 2);
+      let top = rect.top + window.scrollY - 160;
+
+      if (left < 10) left = 10;
+      if (top < 10) top = rect.bottom + window.scrollY + 10;
+
+      popup.style.left = `${left}px`;
+      popup.style.top = `${top}px`;
+    }
+
+    function hideChordPopup() {
+      const popup = document.getElementById('chord-popup');
+      popup.style.display = 'none';
+    }
+
+    window.addEventListener('scroll', hideChordPopup);
 
     function changeKey(amount) {
       transposeStep += amount;
@@ -340,6 +805,7 @@
       document.getElementById('key-display').textContent = label;
     }
 
+    /* 부드러운 스크롤 */
     let isScrolling = false;
     let animationFrameId = null;
     let accumulatedScroll = 0;
@@ -379,21 +845,31 @@
       accumulatedScroll = 0;
     }
 
+    /* 탭 전환 */
     function switchTab(tab) {
+      const listTab = document.getElementById('list-tab');
       const viewerTab = document.getElementById('viewer-tab');
       const editorTab = document.getElementById('editor-tab');
+      const btnList = document.getElementById('btn-tab-list');
       const btnViewer = document.getElementById('btn-tab-viewer');
       const btnEditor = document.getElementById('btn-tab-editor');
 
-      if (tab === 'viewer') {
+      listTab.classList.add('hidden');
+      viewerTab.classList.add('hidden');
+      editorTab.classList.add('hidden');
+      btnList.classList.remove('active');
+      btnViewer.classList.remove('active');
+      btnEditor.classList.remove('active');
+
+      if (tab === 'list') {
+        listTab.classList.remove('hidden');
+        btnList.classList.add('active');
+        renderSongList();
+      } else if (tab === 'viewer') {
         viewerTab.classList.remove('hidden');
-        editorTab.classList.add('hidden');
         btnViewer.classList.add('active');
-        btnEditor.classList.remove('active');
-      } else {
-        viewerTab.classList.add('hidden');
+      } else if (tab === 'editor') {
         editorTab.classList.remove('hidden');
-        btnViewer.classList.remove('active');
         btnEditor.classList.add('active');
       }
     }
@@ -405,6 +881,7 @@
       document.getElementById('song-capo').value = '';
       document.getElementById('song-artist').value = '';
       document.getElementById('song-content').value = '';
+      document.getElementById('editor-delete-btn').classList.add('hidden');
       switchTab('editor');
     }
 
@@ -419,6 +896,7 @@
       document.getElementById('song-capo').value = song.capo || '';
       document.getElementById('song-artist').value = song.artist || '';
       document.getElementById('song-content').value = song.content || '';
+      document.getElementById('editor-delete-btn').classList.remove('hidden');
       switchTab('editor');
     }
 
@@ -442,15 +920,17 @@
           await db.collection("songs").doc(editingSongId).set({
             title, capo, artist, content, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           });
+          currentSongKey = editingSongId;
         } else {
-          await db.collection("songs").add({
+          const docRef = await db.collection("songs").add({
             title, capo, artist, content, createdAt: firebase.firestore.FieldValue.serverTimestamp()
           });
+          currentSongKey = docRef.id;
         }
 
         editingSongId = null;
-        document.getElementById('btn-tab-editor').textContent = "새 곡 추가";
         alert('클라우드에 안전하게 저장되었습니다!');
+        loadSong(currentSongKey);
         switchTab('viewer');
       } catch (err) {
         alert('저장 실패: ' + err.message);
@@ -460,13 +940,20 @@
       }
     }
 
+    /* 2중 확인 삭제 보안 로직 */
     async function deleteCurrentSong() {
-      if (!currentSongKey) return;
-      if (!confirm('정말 이 곡을 삭제할까요? (모든 기기에서 함께 삭제됩니다)')) return;
+      if (!editingSongId) return;
+
+      const songTitle = songsData[editingSongId]?.title || '이 곡';
+      const confirmDelete = confirm(`정말 [${songTitle}]을(를) 영구 삭제하시겠습니까?\n\n삭제된 곡은 모든 기기에서 지워지며 복구할 수 없습니다.`);
+      if (!confirmDelete) return;
 
       try {
-        await db.collection("songs").doc(currentSongKey).delete();
+        await db.collection("songs").doc(editingSongId).delete();
         currentSongKey = '';
+        editingSongId = null;
+        alert('곡이 성공적으로 삭제되었습니다.');
+        switchTab('list');
       } catch (err) {
         alert('삭제 실패: ' + err.message);
       }
