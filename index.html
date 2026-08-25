@@ -22,7 +22,6 @@
       --btn-hover: #404040;
       --accent: #00bcd4;
       --danger: #f44336;
-      --danger-hover: #d32f2f;
       --font-size: 16px;
     }
     * { box-sizing: border-box; }
@@ -129,7 +128,7 @@
       flex-direction: column;
       gap: 10px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       z-index: 100;
       border: 1px solid var(--card-border);
     }
@@ -156,7 +155,7 @@
       font-size: 13px;
     }
     button:hover { background: var(--btn-hover); }
-    .key-badge, .capo-badge, .font-badge {
+    .key-badge, .capo-badge {
       font-size: 13px;
       font-weight: bold;
       padding: 4px 8px;
@@ -172,6 +171,45 @@
       padding: 6px 8px;
       border-radius: 6px;
       font-size: 13px;
+    }
+
+    /* 사용 코드 모아보기 카드 */
+    .chord-summary-box {
+      background: #181818;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .chord-summary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--accent);
+    }
+    .chord-badge-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .chord-badge {
+      background: #282828;
+      border: 1px solid #444;
+      color: var(--chord);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .chord-badge:hover {
+      background: #383838;
+      border-color: var(--chord);
     }
 
     .song-header-info {
@@ -248,15 +286,15 @@
       min-height: 24px;
     }
 
-    /* 코드 팝업 툴팁 다이어그램 */
+    /* 뷰포트 기준 코드 팝업 툴팁 다이어그램 */
     .chord-popup {
       position: fixed;
       background: #000;
       border: 2px solid #555;
       border-radius: 8px;
       padding: 8px 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.8);
-      z-index: 1000;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.9);
+      z-index: 99999;
       display: none;
       pointer-events: none;
       text-align: center;
@@ -343,21 +381,19 @@
         <div class="tool-row">
           <div class="btn-group">
             <span>속도:</span>
-            <select id="scroll-speed" class="speed-select" onchange="updateScrollSpeed()">
-              <option value="0.1">0.1x (매우 느림)</option>
-              <option value="0.2">0.2x</option>
-              <option value="0.3">0.3x</option>
-              <option value="0.4">0.4x</option>
-              <option value="0.5">0.5x</option>
-              <option value="0.7">0.7x</option>
-              <option value="1.0" selected>1.0x (기본)</option>
-              <option value="1.3">1.3x</option>
-              <option value="1.6">1.6x</option>
-              <option value="2.0">2.0x (빠름)</option>
-            </select>
+            <select id="scroll-speed" class="speed-select" onchange="updateScrollSpeed()"></select>
           </div>
           <button id="scroll-btn" onclick="toggleScroll()" style="flex:1; max-width:140px;">스크롤 시작</button>
         </div>
+      </div>
+
+      <!-- 사용된 코드 모아보기 프리뷰 바 -->
+      <div class="chord-summary-box">
+        <div class="chord-summary-header" onclick="toggleSummaryBox()">
+          <span id="summary-header-text">🎸 이 곡에 사용된 코드 (0개)</span>
+          <span id="summary-toggle-icon">▼ 펼치기</span>
+        </div>
+        <div class="chord-badge-list hidden" id="chord-summary-list"></div>
       </div>
 
       <div class="song-header-info">
@@ -374,28 +410,26 @@
     <div id="editor-tab" class="hidden">
       <div class="editor-card">
         <div class="input-row">
-          <input type="text" id="song-title" placeholder="곡 제목 (예: 고백 / Soranji)" style="flex: 2;">
+          <input type="text" id="song-title" placeholder="곡 제목 (예: 고백 / 風と町)" style="flex: 2;">
           <input type="text" id="song-capo" placeholder="카포 위치 (예: 4)" style="flex: 1;">
         </div>
         <input type="text" id="song-artist" placeholder="아티스트 (예: 델리스파이스 / Mrs. GREEN APPLE)">
-        <textarea id="song-content" placeholder="ChordPro 형식 입력:&#10;1) 일반: [G]가사 [A]입력 [C]예시&#10;2) 일본어 3단: [G](流れる/나가레루) [C](星/호시)"></textarea>
+        <textarea id="song-content" placeholder="ChordPro 형식 입력:&#10;1) 일반: [G]가사 [A]입력 [C]예시&#10;2) 분수 코드: [D/F#]가사 [G/B]입력&#10;3) 일본어 3단: [G](流れる/나가레루) [C](星/호시)"></textarea>
         
         <div style="display: flex; gap: 8px;">
           <button class="save-btn" id="submit-btn" style="flex: 2;" onclick="saveSong()">클라우드에 저장</button>
           <button class="cancel-btn" style="flex: 1;" onclick="switchTab(currentSongKey ? 'viewer' : 'list')">취소</button>
         </div>
 
-        <!-- 수정 모드일 때만 나타나는 안전 삭제 버튼 -->
         <button id="editor-delete-btn" class="delete-btn hidden" onclick="deleteCurrentSong()">이 곡 삭제하기</button>
       </div>
     </div>
   </div>
 
-  <!-- 호버 시 나타나는 코드 운지 다이어그램 팝업 -->
+  <!-- 호버/터치 시 뷰포트 기준 다이어그램 팝업 -->
   <div id="chord-popup" class="chord-popup"></div>
 
   <script>
-    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyDvSGuLo_9aY88xOvDfaMJnwmKYo76Ggps",
       authDomain: "chords-note-b898c.firebaseapp.com",
@@ -417,8 +451,24 @@
     let currentFontSize = parseInt(localStorage.getItem('my_chord_font_size')) || 16;
     document.documentElement.style.setProperty('--font-size', `${currentFontSize}px`);
 
-    /* 기타 코드 데이터베이스 */
+    /* 0.1 ~ 2.0 세분화 셀렉트 박스 생성 */
+    function initSpeedOptions() {
+      const speedSelect = document.getElementById('scroll-speed');
+      speedSelect.innerHTML = '';
+      for (let i = 1; i <= 20; i++) {
+        const val = (i / 10).toFixed(1);
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = `${val}x` + (val === "0.1" ? " (최저속)" : (val === "1.0" ? " (기본)" : (val === "2.0" ? " (최고속)" : "")));
+        if (val === "1.0") opt.selected = true;
+        speedSelect.appendChild(opt);
+      }
+    }
+    initSpeedOptions();
+
+    /* 주요 분수/슬래시 코드 데이터베이스 */
     const chordDB = {
+      // 3화음 메이저
       "C": { frets: [-1, 3, 2, 0, 1, 0], base: 1 },
       "C#": { frets: [-1, 4, 3, 1, 2, 1], base: 1 },
       "Db": { frets: [-1, 4, 3, 1, 2, 1], base: 1 },
@@ -437,6 +487,7 @@
       "Bb": { frets: [-1, 1, 3, 3, 3, 1], base: 1 },
       "B": { frets: [-1, 2, 4, 4, 4, 2], base: 1 },
 
+      // 마이너
       "Cm": { frets: [-1, 3, 5, 5, 4, 3], base: 1 },
       "C#m": { frets: [-1, 4, 6, 6, 5, 4], base: 1 },
       "Dm": { frets: [-1, -1, 0, 2, 3, 1], base: 1 },
@@ -452,6 +503,7 @@
       "Bbm": { frets: [-1, 1, 3, 3, 2, 1], base: 1 },
       "Bm": { frets: [-1, 2, 4, 4, 3, 2], base: 1 },
 
+      // 7th & Maj7 & m7
       "C7": { frets: [-1, 3, 2, 3, 1, 0], base: 1 },
       "CM7": { frets: [-1, 3, 2, 0, 0, 0], base: 1 },
       "Cmaj7": { frets: [-1, 3, 2, 0, 0, 0], base: 1 },
@@ -472,12 +524,26 @@
       "BM7": { frets: [-1, 2, 4, 3, 4, 2], base: 1 },
       "Bm7": { frets: [-1, 2, 0, 2, 0, 2], base: 1 },
 
+      // 서스포 / 애드나인
       "Csus4": { frets: [-1, 3, 3, 0, 1, 1], base: 1 },
       "Dsus4": { frets: [-1, -1, 0, 2, 3, 3], base: 1 },
       "Esus4": { frets: [0, 2, 2, 2, 0, 0], base: 1 },
       "Gsus4": { frets: [3, 3, 0, 0, 1, 3], base: 1 },
       "Asus4": { frets: [-1, 0, 2, 2, 3, 0], base: 1 },
-      "Cadd9": { frets: [-1, 3, 2, 0, 3, 0], base: 1 }
+      "Cadd9": { frets: [-1, 3, 2, 0, 3, 0], base: 1 },
+
+      // 실전 분수/슬래시(Slash) 코드 운지표
+      "D/F#": { frets: [2, 0, 0, 2, 3, 2], base: 1 },
+      "G/B": { frets: [-1, 2, 0, 0, 0, 3], base: 1 },
+      "C/E": { frets: [0, 3, 2, 0, 1, 0], base: 1 },
+      "Em/G": { frets: [3, 2, 2, 0, 0, 0], base: 1 },
+      "Am/G": { frets: [3, 0, 2, 2, 1, 0], base: 1 },
+      "F/A": { frets: [-1, 0, 3, 2, 1, 1], base: 1 },
+      "C/D": { frets: [-1, -1, 0, 0, 1, 0], base: 1 },
+      "G/D": { frets: [-1, -1, 0, 0, 0, 3], base: 1 },
+      "A/C#": { frets: [-1, 4, 2, 2, 2, 0], base: 1 },
+      "E/G#": { frets: [4, 2, 2, 1, 0, 0], base: 1 },
+      "Bm/D": { frets: [-1, -1, 0, 4, 3, 2], base: 1 }
     };
 
     // 실시간 동기화
@@ -492,14 +558,12 @@
       }
     });
 
-    /* 글자 크기 조절 엔진 */
     function adjustFontSize(delta) {
       currentFontSize = Math.max(12, Math.min(24, currentFontSize + delta));
       document.documentElement.style.setProperty('--font-size', `${currentFontSize}px`);
       localStorage.setItem('my_chord_font_size', currentFontSize);
     }
 
-    /* 곡 목록 렌더링 & 검색 */
     function renderSongList() {
       const container = document.getElementById('song-list-container');
       const query = document.getElementById('search-input').value.toLowerCase().trim();
@@ -568,8 +632,17 @@
       renderSheet();
     }
 
+    /* 분수 코드(D/F#, G/B 등) 양쪽 모두 완벽하게 조옮김하는 함수 */
     function transposeChord(chord, amount) {
-      return chord.replace(/([A-G][#b]?)/g, (match) => {
+      if (chord.includes('/')) {
+        const parts = chord.split('/');
+        return transposeSingleRoot(parts[0], amount) + '/' + transposeSingleRoot(parts[1], amount);
+      }
+      return transposeSingleRoot(chord, amount);
+    }
+
+    function transposeSingleRoot(rootChord, amount) {
+      return rootChord.replace(/([A-G][#b]?)/g, (match) => {
         let root = match;
         const flats = { 'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#' };
         if (flats[root]) root = flats[root];
@@ -634,6 +707,18 @@
       return { chord, lyric: rawSegment, isRuby: false };
     }
 
+    function toggleSummaryBox() {
+      const list = document.getElementById('chord-summary-list');
+      const icon = document.getElementById('summary-toggle-icon');
+      if (list.classList.contains('hidden')) {
+        list.classList.remove('hidden');
+        icon.textContent = '▲ 접기';
+      } else {
+        list.classList.add('hidden');
+        icon.textContent = '▼ 펼치기';
+      }
+    }
+
     function renderSheet() {
       const output = document.getElementById('output');
       output.innerHTML = '';
@@ -645,6 +730,7 @@
 
       const songData = songsData[currentSongKey].content;
       const lines = songData.split('\n');
+      const usedChordsSet = new Set();
 
       lines.forEach(lineText => {
         const trimmed = lineText.trim();
@@ -669,13 +755,19 @@
 
           if (p.chord) {
             const transposed = transposeChord(p.chord, transposeStep);
+            usedChordsSet.add(transposed);
+
             const chordSpan = document.createElement('span');
             chordSpan.className = 'chord';
             chordSpan.textContent = transposed;
             
+            // 뷰포트 기준 다이어그램 표시
             chordSpan.onmouseenter = (e) => showChordPopup(transposed, e);
             chordSpan.onmouseleave = hideChordPopup;
-            chordSpan.ontouchstart = (e) => showChordPopup(transposed, e);
+            chordSpan.ontouchstart = (e) => {
+              e.stopPropagation();
+              showChordPopup(transposed, e);
+            };
 
             chordWrap.appendChild(chordSpan);
           } else {
@@ -711,17 +803,36 @@
 
         output.appendChild(lineDiv);
       });
+
+      // 사용된 코드 모아보기 바 렌더링
+      const summaryHeader = document.getElementById('summary-header-text');
+      const summaryList = document.getElementById('chord-summary-list');
+      summaryList.innerHTML = '';
+      summaryHeader.textContent = `🎸 이 곡에 사용된 코드 (${usedChordsSet.size}개)`;
+
+      usedChordsSet.forEach(cName => {
+        const badge = document.createElement('span');
+        badge.className = 'chord-badge';
+        badge.textContent = cName;
+        badge.onmouseenter = (e) => showChordPopup(cName, e);
+        badge.onmouseleave = hideChordPopup;
+        badge.ontouchstart = (e) => {
+          e.stopPropagation();
+          showChordPopup(cName, e);
+        };
+        summaryList.appendChild(badge);
+      });
     }
 
     function generateChordSVG(chordName) {
       let data = chordDB[chordName];
-      if (!data) {
+      if (!data && chordName.includes('/')) {
         const rootOnly = chordName.split('/')[0];
         data = chordDB[rootOnly];
       }
 
       if (!data) {
-        return `<div style="color:#aaa; font-size:12px; padding:8px;">${chordName}<br>운지표 준비중</div>`;
+        return `<div style="color:#aaa; font-size:12px; padding:10px;">${chordName}<br>운지표 준비중</div>`;
       }
 
       const { frets, base } = data;
@@ -733,7 +844,7 @@
       const fretGap = 20;
 
       let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
-      svg += `<text x="${width/2}" y="20" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">${chordName}</text>`;
+      svg += `<text x="${width/2}" y="20" fill="#fff" font-size="15" font-weight="bold" text-anchor="middle">${chordName}</text>`;
 
       if (base === 1) {
         svg += `<line x1="${startX}" y1="${startY}" x2="${startX + stringGap * 5}" y2="${startY}" stroke="#fff" stroke-width="4"/>`;
@@ -770,6 +881,7 @@
       return svg;
     }
 
+    /* 뷰포트 기준 정확한 위치 계산 (스크롤 어디서든 절대 날아가지 않음) */
     function showChordPopup(chordName, event) {
       const popup = document.getElementById('chord-popup');
       popup.innerHTML = generateChordSVG(chordName);
@@ -777,11 +889,19 @@
 
       const rect = event.target.getBoundingClientRect();
       const popupWidth = 130;
-      let left = rect.left + window.scrollX - (popupWidth / 2) + (rect.width / 2);
-      let top = rect.top + window.scrollY - 160;
+      const popupHeight = 150;
+
+      let left = rect.left + (rect.width / 2) - (popupWidth / 2);
+      let top = rect.top - popupHeight - 8;
 
       if (left < 10) left = 10;
-      if (top < 10) top = rect.bottom + window.scrollY + 10;
+      if (left + popupWidth > window.innerWidth - 10) {
+        left = window.innerWidth - popupWidth - 10;
+      }
+
+      if (top < 10) {
+        top = rect.bottom + 8;
+      }
 
       popup.style.left = `${left}px`;
       popup.style.top = `${top}px`;
@@ -792,7 +912,11 @@
       popup.style.display = 'none';
     }
 
-    window.addEventListener('scroll', hideChordPopup);
+    document.addEventListener('touchstart', (e) => {
+      if (!e.target.classList.contains('chord') && !e.target.classList.contains('chord-badge')) {
+        hideChordPopup();
+      }
+    });
 
     function changeKey(amount) {
       transposeStep += amount;
@@ -805,7 +929,6 @@
       document.getElementById('key-display').textContent = label;
     }
 
-    /* 부드러운 스크롤 */
     let isScrolling = false;
     let animationFrameId = null;
     let accumulatedScroll = 0;
@@ -845,7 +968,6 @@
       accumulatedScroll = 0;
     }
 
-    /* 탭 전환 */
     function switchTab(tab) {
       const listTab = document.getElementById('list-tab');
       const viewerTab = document.getElementById('viewer-tab');
@@ -940,7 +1062,6 @@
       }
     }
 
-    /* 2중 확인 삭제 보안 로직 */
     async function deleteCurrentSong() {
       if (!editingSongId) return;
 
